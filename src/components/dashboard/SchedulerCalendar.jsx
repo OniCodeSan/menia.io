@@ -4,6 +4,7 @@ import {
   ChevronLeft, ChevronRight, Plus, X, Calendar, Clock,
   Video, FileImage, Radio, Bell, BellOff, Trash2, Crown
 } from "lucide-react";
+import MediaUploader from "./MediaUploader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,6 +46,7 @@ export default function SchedulerCalendar() {
 
   // Form state
   const [form, setForm] = useState({ title: "", time: "12:00", type: "post", notify: true });
+  const [uploadedFile, setUploadedFile] = useState(null);
 
   const prevMonth = () => {
     if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear(y => y - 1); }
@@ -67,12 +69,14 @@ export default function SchedulerCalendar() {
     setSelectedDay(day);
     setEditEvent(null);
     setForm({ title: "", time: "12:00", type: "post", notify: true });
+    setUploadedFile(null);
     setShowModal(true);
   };
 
   const openEdit = (ev) => {
     setEditEvent(ev);
     setForm({ title: ev.title, time: ev.time, type: ev.type, notify: ev.notify });
+    setUploadedFile(null);
     setShowModal(true);
   };
 
@@ -307,6 +311,14 @@ export default function SchedulerCalendar() {
                     className="bg-secondary/30 border-border/30 h-10"
                   />
                 </div>
+
+                {/* Media upload */}
+                {form.type !== "live" && (
+                  <MediaUploader
+                    contentType={form.type}
+                    onFileReady={(original, compressed) => setUploadedFile(compressed || original)}
+                  />
+                )}
 
                 {/* Time */}
                 <div>
