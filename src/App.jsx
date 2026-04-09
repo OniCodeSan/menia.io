@@ -13,6 +13,7 @@ import Dashboard from './pages/Dashboard';
 import ContentPage from './pages/ContentPage';
 import Checkout from './pages/Checkout';
 import Explore from './pages/Explore';
+import Messages from './pages/Messages';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -48,6 +49,7 @@ const AuthenticatedApp = () => {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/content" element={<ContentPage />} />
         <Route path="/checkout" element={<Checkout />} />
+        <Route path="/messages" element={<Messages />} />
         <Route path="*" element={<PageNotFound />} />
       </Route>
     </Routes>
