@@ -70,19 +70,22 @@ export default function MediaUploader({ contentType, onFileReady }) {
     if (isImage(f)) {
       const url = URL.createObjectURL(f);
       setPreview(url);
-      const limitBytes = MAX_IMAGE_MB * 1024 * 1024;
-      if (f.size > limitBytes) {
-        setWarning(`Immagine grande (${formatBytes(f.size)}). Comprimi prima di pubblicare.`);
-      }
+      // Auto-compress immediately
+      setCompressing(true);
+      const { blob, width, height } = await compressImage(f, quality, maxPx);
+      setCompressedSize(blob.size);
+      setCompressing(false);
+      setDone(true);
+      const compressed = new File([blob], f.name.replace(/\.\w+$/, ".jpg"), { type: "image/jpeg" });
+      if (onFileReady) onFileReady(f, compressed);
     } else if (isVideo(f)) {
       setPreview(null);
       const limitBytes = MAX_VIDEO_MB * 1024 * 1024;
       if (f.size > limitBytes) {
-        setWarning(`Video molto pesante (${formatBytes(f.size)}). Considera di ridurre la qualità.`);
+        setWarning(`Video molto pesante (${formatBytes(f.size)}). Considera di ridurre la qualità prima del caricamento.`);
       }
+      if (onFileReady) onFileReady(f, null);
     }
-
-    if (onFileReady) onFileReady(f, null);
   };
 
   const handleDrop = useCallback((e) => {
@@ -210,7 +213,7 @@ export default function MediaUploader({ contentType, onFileReady }) {
                   </div>
                   <Slider
                     value={[quality]}
-                    onValueChange={([v]) => { setQuality(v); setDone(false); }}
+                    onValueChange={async ([v]) => { setQuality(v); setDone(false); setCompressing(true); const { blob } = await compressImage(file, v, maxPx); setCompressedSize(blob.size); setCompressing(false); setDone(true); const c = new File([blob], file.name.replace(/\.\w+$/, ".jpg"), { type: "image/jpeg" }); if (onFileReady) onFileReady(file, c); }}
                     min={30} max={100} step={5}
                     className="w-full"
                   />
@@ -227,7 +230,7 @@ export default function MediaUploader({ contentType, onFileReady }) {
                   </div>
                   <Slider
                     value={[maxPx]}
-                    onValueChange={([v]) => { setMaxPx(v); setDone(false); }}
+                    onValueChange={async ([v]) => { setMaxPx(v); setDone(false); setCompressing(true); const { blob } = await compressImage(file, quality, v); setCompressedSize(blob.size); setCompressing(false); setDone(true); const c = new File([blob], file.name.replace(/\.\w+$/, ".jpg"), { type: "image/jpeg" }); if (onFileReady) onFileReady(file, c); }}
                     min={480} max={3840} step={240}
                     className="w-full"
                   />
@@ -237,29 +240,21 @@ export default function MediaUploader({ contentType, onFileReady }) {
                   </div>
                 </div>
 
-                {done ? (
+                {compressing ? (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground bg-secondary/40 rounded-lg px-3 py-2">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Ottimizzazione automatica in corso...
+                  </div>
+                ) : done ? (
                   <motion.div
                     initial={{ scale: 0.95 }}
                     animate={{ scale: 1 }}
                     className="flex items-center gap-2 text-xs text-chart-3 font-semibold bg-chart-3/8 border border-chart-3/25 rounded-lg px-3 py-2"
                   >
                     <CheckCircle2 className="w-4 h-4" />
-                    Immagine ottimizzata e pronta per la pubblicazione!
+                    Immagine ottimizzata automaticamente!
                   </motion.div>
-                ) : (
-                  <Button
-                    size="sm"
-                    onClick={handleCompress}
-                    disabled={compressing}
-                    className="w-full h-8 text-xs bg-primary hover:bg-primary/90 glow-primary font-semibold"
-                  >
-                    {compressing ? (
-                      <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Ottimizzazione in corso...</>
-                    ) : (
-                      <><Sliders className="w-3.5 h-3.5 mr-1.5" />Ottimizza e comprimi</>
-                    )}
-                  </Button>
-                )}
+                ) : null}
               </div>
             )}
 
