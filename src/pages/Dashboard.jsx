@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import StatCard from "../components/dashboard/StatCard";
 import SchedulerCalendar from "../components/dashboard/SchedulerCalendar";
 import AnalyticsDashboard from "../components/dashboard/AnalyticsDashboard";
+import LoyaltySystem from "../components/dashboard/LoyaltySystem";
 import RevenueChart from "../components/dashboard/RevenueChart";
 import FunnelVisual from "../components/dashboard/FunnelVisual";
 import FanCRM from "../components/dashboard/FanCRM";
@@ -40,6 +41,7 @@ export default function Dashboard() {
             {[
               { id: "overview", label: "Overview" },
               { id: "analytics", label: "Analytics" },
+              { id: "loyalty", label: "Fedeltà Fan" },
               { id: "calendar", label: "Calendario" },
             ].map((tab) => (
               <button
@@ -97,6 +99,8 @@ export default function Dashboard() {
           </>
         ) : activeTab === "analytics" ? (
           <AnalyticsDashboard />
+        ) : activeTab === "loyalty" ? (
+          <LoyaltySystem />
         ) : (
           <SchedulerCalendar />
         )}
