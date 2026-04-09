@@ -3,6 +3,7 @@ import { DollarSign, Users, TrendingUp, UserPlus, Upload, Settings, Bell, Zap, M
 import { Button } from "@/components/ui/button";
 import StatCard from "../components/dashboard/StatCard";
 import SchedulerCalendar from "../components/dashboard/SchedulerCalendar";
+import AnalyticsDashboard from "../components/dashboard/AnalyticsDashboard";
 import RevenueChart from "../components/dashboard/RevenueChart";
 import FunnelVisual from "../components/dashboard/FunnelVisual";
 import FanCRM from "../components/dashboard/FanCRM";
@@ -38,6 +39,7 @@ export default function Dashboard() {
           <div className="flex gap-1 mt-5 bg-secondary/40 p-1 rounded-xl w-fit">
             {[
               { id: "overview", label: "Overview" },
+              { id: "analytics", label: "Analytics" },
               { id: "calendar", label: "Calendario" },
             ].map((tab) => (
               <button
@@ -93,6 +95,8 @@ export default function Dashboard() {
               </div>
             </div>
           </>
+        ) : activeTab === "analytics" ? (
+          <AnalyticsDashboard />
         ) : (
           <SchedulerCalendar />
         )}
