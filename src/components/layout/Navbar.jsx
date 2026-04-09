@@ -11,6 +11,7 @@ export default function Navbar() {
   const navLinks = [
     { label: "Feed", path: "/feed" },
     { label: "Esplora", path: "/explore" },
+    { label: "Live", path: "/live-discover" },
     { label: "Messaggi", path: "/messages" },
     { label: "Dashboard", path: "/dashboard" },
   ];
