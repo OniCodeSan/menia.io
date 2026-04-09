@@ -27,7 +27,7 @@ export default function Navbar() {
           <div className="w-9 h-9 rounded-lg bg-primary/20 flex items-center justify-center glow-primary group-hover:bg-primary/30 transition-all duration-300">
             <Zap className="w-5 h-5 text-primary" />
           </div>
-          <span className="font-heading font-bold text-lg tracking-tight">CreatorOS</span>
+          <span className="font-heading font-bold text-lg tracking-tight">Unlockr</span>
         </Link>
 
         {/* Desktop nav */}
