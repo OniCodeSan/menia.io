@@ -9,6 +9,7 @@ import RevenueChart from "../components/dashboard/RevenueChart";
 import FunnelVisual from "../components/dashboard/FunnelVisual";
 import FanCRM from "../components/dashboard/FanCRM";
 import { dashboardData } from "../lib/mockData";
+import NotificationsDropdown from "../components/dashboard/NotificationsDropdown";
 import SettingsPanel from "../components/dashboard/SettingsPanel";
 import { useState } from "react";
 
@@ -26,10 +27,7 @@ export default function Dashboard() {
               <p className="text-sm text-muted-foreground">Panoramica delle tue performance</p>
             </div>
             <div className="flex gap-3">
-              <Button variant="outline" size="sm" className="border-border/50">
-                <Bell className="w-4 h-4 mr-2" />
-                Notifiche
-              </Button>
+              <NotificationsDropdown />
               <Button size="sm" className="bg-primary hover:bg-primary/90 glow-primary">
                 <Upload className="w-4 h-4 mr-2" />
                 Pubblica
