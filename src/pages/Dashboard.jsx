@@ -80,7 +80,7 @@ export default function Dashboard() {
                   <div className="space-y-3">
                     {[
                       { icon: Upload, label: "Nuovo contenuto", color: "text-primary" },
-                      { icon: Zap, label: "Nuova automazione", color: "text-accent" },
+
                       { icon: MessageCircle, label: "Messaggio broadcast", color: "text-chart-4" },
                       { icon: Calendar, label: "Programma post", color: "text-chart-3", onClick: () => setActiveTab("calendar") },
                       { icon: Settings, label: "Impostazioni", color: "text-muted-foreground" },
