@@ -17,6 +17,8 @@ import Messages from './pages/Messages';
 import LiveDiscover from './pages/LiveDiscover';
 import LiveWatch from './pages/LiveWatch';
 import GoLive from './pages/GoLive';
+import CreatorPortal from './pages/CreatorPortal';
+import FanPortal from './pages/FanPortal';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -56,6 +58,8 @@ const AuthenticatedApp = () => {
         <Route path="/live-discover" element={<LiveDiscover />} />
         <Route path="/live" element={<LiveWatch />} />
         <Route path="/go-live" element={<GoLive />} />
+        <Route path="/creator-portal" element={<CreatorPortal />} />
+        <Route path="/fan-portal" element={<FanPortal />} />
         <Route path="*" element={<PageNotFound />} />
       </Route>
     </Routes>
