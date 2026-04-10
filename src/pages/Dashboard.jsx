@@ -37,7 +37,7 @@ export default function Dashboard() {
           </div>
 
           {/* Tab nav */}
-          <div className="flex gap-1 mt-5 bg-secondary/40 p-1 rounded-xl w-fit">
+          <div className="flex gap-1 mt-5 bg-secondary/40 p-1 rounded-xl overflow-x-auto max-w-full scrollbar-none">
             {[
               { id: "overview", label: "Overview" },
               { id: "analytics", label: "Analytics" },
