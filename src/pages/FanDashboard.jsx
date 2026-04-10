@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import AuthGuard from "../components/shared/AuthGuard";
 import { Heart, Star, Bell, BellOff, Crown, Play, Radio, MessageCircle, Search, TrendingUp, Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -97,6 +98,7 @@ export default function FanDashboard() {
   );
 
   return (
+    <AuthGuard allowedRoles={["fan", "admin"]}>
     <div className="min-h-screen">
       {/* Header */}
       <div className="border-b border-border/30 bg-card/30">
@@ -319,5 +321,6 @@ export default function FanDashboard() {
         )}
       </div>
     </div>
+    </AuthGuard>
   );
 }

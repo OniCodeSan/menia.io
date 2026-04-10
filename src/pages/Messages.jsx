@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import AuthGuard from "../components/shared/AuthGuard";
 import { MessageCircle } from "lucide-react";
 import ConversationList from "../components/messages/ConversationList";
 import ChatWindow from "../components/messages/ChatWindow";
@@ -8,6 +9,7 @@ export default function Messages() {
   const [selected, setSelected] = useState(null);
 
   return (
+    <AuthGuard>
     <div className="h-[calc(100vh-64px)] flex overflow-hidden">
       {/* Sidebar — always visible on md+, hidden on mobile when chat open */}
       <div className={`${selected ? "hidden md:flex" : "flex"} w-full md:w-80 lg:w-96 flex-col border-r border-border/30 bg-card/20`}>
@@ -50,5 +52,6 @@ export default function Messages() {
         </AnimatePresence>
       </div>
     </div>
+    </AuthGuard>
   );
 }

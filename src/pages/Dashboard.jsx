@@ -1,3 +1,4 @@
+import AuthGuard from "../components/shared/AuthGuard";
 import { motion } from "framer-motion";
 import { DollarSign, Users, TrendingUp, UserPlus, Upload, Settings, Bell, Zap, MessageCircle, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("overview");
 
   return (
+    <AuthGuard allowedRoles={["creator", "admin"]}>
     <div className="min-h-screen">
       {/* Dashboard header */}
       <div className="border-b border-border/30 bg-card/30">
@@ -108,5 +110,6 @@ export default function Dashboard() {
         )}
       </div>
     </div>
+    </AuthGuard>
   );
 }
