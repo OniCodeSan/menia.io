@@ -14,6 +14,7 @@ import NotificationsDropdown from "../components/dashboard/NotificationsDropdown
 import SettingsPanel from "../components/dashboard/SettingsPanel";
 import PublishContent from "../components/dashboard/PublishContent";
 import VerificationPanel from "../components/dashboard/VerificationPanel";
+import SubscriptionManager from "../components/dashboard/SubscriptionManager";
 import { useState } from "react";
 
 export default function Dashboard() {
@@ -45,6 +46,7 @@ export default function Dashboard() {
               { id: "overview", label: "Overview" },
               { id: "analytics", label: "Analytics" },
               { id: "loyalty", label: "Fan" },
+              { id: "subscriptions", label: "Abbonamenti" },
               { id: "calendar", label: "Calendario" },
               { id: "publish", label: "Pubblica" },
               { id: "verification", label: "Verifica & KYC" },
@@ -107,6 +109,8 @@ export default function Dashboard() {
           <AnalyticsDashboard />
         ) : activeTab === "loyalty" ? (
           <LoyaltySystem />
+        ) : activeTab === "subscriptions" ? (
+          <SubscriptionManager />
         ) : activeTab === "publish" ? (
           <PublishContent />
         ) : activeTab === "verification" ? (

@@ -1,11 +1,69 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
-import { Users, Zap, Radio, Crown, Share2, Heart, ArrowLeft } from "lucide-react";
+import { Users, Zap, Radio, Crown, Share2, Heart, ArrowLeft, Play, Volume2, VolumeX, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import LiveChat from "../components/live/LiveChat";
 import DonationPanel from "../components/live/DonationPanel";
 import DonationAlert from "../components/live/DonationAlert";
+
+function VideoPlayer() {
+  const videoRef = useRef(null);
+  const [muted, setMuted] = useState(true);
+  const [playing, setPlaying] = useState(false);
+
+  const toggle = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (v.paused) { v.play(); setPlaying(true); }
+    else { v.pause(); setPlaying(false); }
+  };
+
+  const toggleMute = (e) => {
+    e.stopPropagation();
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = !v.muted;
+    setMuted(v.muted);
+  };
+
+  const fullscreen = (e) => {
+    e.stopPropagation();
+    videoRef.current?.requestFullscreen?.();
+  };
+
+  return (
+    <div className="relative w-full h-full bg-black cursor-pointer" onClick={toggle}>
+      {/* Real video — replace src with actual stream/video URL */}
+      <video
+        ref={videoRef}
+        className="w-full h-full object-cover"
+        src="https://www.w3schools.com/html/mov_bbb.mp4"
+        poster="https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=900&h=500&fit=crop"
+        muted
+        playsInline
+        loop
+      />
+      {/* Play overlay */}
+      {!playing && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-all">
+            <Play className="w-7 h-7 text-white fill-white" />
+          </div>
+        </div>
+      )}
+      {/* Controls */}
+      <div className="absolute bottom-4 right-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button onClick={toggleMute} className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all">
+          {muted ? <VolumeX className="w-4 h-4 text-white" /> : <Volume2 className="w-4 h-4 text-white" />}
+        </button>
+        <button onClick={fullscreen} className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all">
+          <Maximize2 className="w-4 h-4 text-white" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function LiveWatch() {
   const [viewers] = useState(1247);
@@ -32,14 +90,11 @@ export default function LiveWatch() {
           {/* Main stream area */}
           <div className="lg:col-span-2 space-y-4">
             {/* Video player */}
-            <div className="relative rounded-2xl overflow-hidden border border-border/30 bg-black aspect-video">
-              <img
-                src="https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=900&h=500&fit=crop"
-                alt="Live stream"
-                className="w-full h-full object-cover opacity-90"
-              />
+            <div className="relative rounded-2xl overflow-hidden border border-border/30 bg-black aspect-video group">
+              {/* Real video element — swap src for a real HLS/MP4 URL */}
+              <VideoPlayer />
               {/* Overlay gradient */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
 
               {/* Donation alert */}
               <DonationAlert donation={currentDonation} />
