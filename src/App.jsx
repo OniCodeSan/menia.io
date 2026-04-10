@@ -20,6 +20,7 @@ import GoLive from './pages/GoLive';
 import CreatorPortal from './pages/CreatorPortal';
 import FanDashboard from './pages/FanDashboard';
 import FanPortal from './pages/FanPortal';
+import AdminConsole from './pages/AdminConsole';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -62,6 +63,7 @@ const AuthenticatedApp = () => {
         <Route path="/creator-portal" element={<CreatorPortal />} />
         <Route path="/fan-dashboard" element={<FanDashboard />} />
         <Route path="/fan-portal" element={<FanPortal />} />
+        <Route path="/admin-console" element={<AdminConsole />} />
         <Route path="*" element={<PageNotFound />} />
       </Route>
     </Routes>
