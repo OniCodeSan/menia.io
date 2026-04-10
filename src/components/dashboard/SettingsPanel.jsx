@@ -54,6 +54,27 @@ function ProfileSection() {
           <Input defaultValue="https://giulia.fit" className="bg-secondary/30 border-border/30 h-10" />
         </div>
       </div>
+      <div className="space-y-3">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Social</p>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Instagram</Label>
+            <Input defaultValue="@giulia.fit" placeholder="@username" className="bg-secondary/30 border-border/30 h-10" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">TikTok</Label>
+            <Input defaultValue="@giuliafit" placeholder="@username" className="bg-secondary/30 border-border/30 h-10" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">YouTube</Label>
+            <Input defaultValue="" placeholder="https://youtube.com/@..." className="bg-secondary/30 border-border/30 h-10" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Twitter / X</Label>
+            <Input defaultValue="" placeholder="@username" className="bg-secondary/30 border-border/30 h-10" />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
