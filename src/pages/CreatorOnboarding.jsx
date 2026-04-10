@@ -231,9 +231,15 @@ export default function CreatorOnboarding() {
                       className="bg-secondary/30 border-border/30 h-10"
                     />
                     <p className="text-[11px] text-chart-3">
-                      {pricing.monthly && pricing.yearly
-                        ? `Risparmio fan: ${Math.round((1 - parseFloat(pricing.yearly) / (parseFloat(pricing.monthly) * 12)) * 100)}%`
-                        : ""}
+                      {(() => {
+                        const m = parseFloat(pricing.monthly);
+                        const y = parseFloat(pricing.yearly);
+                        if (m > 0 && y > 0) {
+                          const saving = Math.round((1 - y / (m * 12)) * 100);
+                          return saving > 0 ? `✓ I fan risparmiano il ${saving}% rispetto al mensile` : y >= m * 12 ? "⚠ Prezzo annuale non conveniente" : "";
+                        }
+                        return "";
+                      })()}
                     </p>
                   </div>
                 </div>
