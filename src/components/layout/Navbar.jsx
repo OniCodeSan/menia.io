@@ -46,12 +46,12 @@ export default function Navbar() {
         </div>
 
         <div className="hidden md:flex items-center gap-3">
-          <Link to="/feed">
+          <Link to="/fan-portal">
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
               Accedi
             </Button>
           </Link>
-          <Link to="/feed">
+          <Link to="/creator-onboarding">
             <Button size="sm" className="bg-primary hover:bg-primary/90 glow-primary font-semibold">
               Diventa Creator
             </Button>
