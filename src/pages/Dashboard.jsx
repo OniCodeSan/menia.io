@@ -12,6 +12,8 @@ import FanCRM from "../components/dashboard/FanCRM";
 import { dashboardData } from "../lib/mockData";
 import NotificationsDropdown from "../components/dashboard/NotificationsDropdown";
 import SettingsPanel from "../components/dashboard/SettingsPanel";
+import PublishContent from "../components/dashboard/PublishContent";
+import VerificationPanel from "../components/dashboard/VerificationPanel";
 import { useState } from "react";
 
 export default function Dashboard() {
@@ -44,12 +46,14 @@ export default function Dashboard() {
               { id: "analytics", label: "Analytics" },
               { id: "loyalty", label: "Fan" },
               { id: "calendar", label: "Calendario" },
+              { id: "publish", label: "Pubblica" },
+              { id: "verification", label: "Verifica & KYC" },
               { id: "settings", label: "Impostazioni" },
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+                className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${
                   activeTab === tab.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -103,6 +107,10 @@ export default function Dashboard() {
           <AnalyticsDashboard />
         ) : activeTab === "loyalty" ? (
           <LoyaltySystem />
+        ) : activeTab === "publish" ? (
+          <PublishContent />
+        ) : activeTab === "verification" ? (
+          <VerificationPanel />
         ) : activeTab === "settings" ? (
           <SettingsPanel />
         ) : (
