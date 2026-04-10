@@ -9,6 +9,7 @@ import RevenueChart from "../components/dashboard/RevenueChart";
 import FunnelVisual from "../components/dashboard/FunnelVisual";
 import FanCRM from "../components/dashboard/FanCRM";
 import { dashboardData } from "../lib/mockData";
+import SettingsPanel from "../components/dashboard/SettingsPanel";
 import { useState } from "react";
 
 export default function Dashboard() {
@@ -43,6 +44,7 @@ export default function Dashboard() {
               { id: "analytics", label: "Analytics" },
               { id: "loyalty", label: "Fedeltà Fan" },
               { id: "calendar", label: "Calendario" },
+              { id: "settings", label: "Impostazioni" },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -83,7 +85,7 @@ export default function Dashboard() {
 
                       { icon: MessageCircle, label: "Messaggio broadcast", color: "text-chart-4" },
                       { icon: Calendar, label: "Programma post", color: "text-chart-3", onClick: () => setActiveTab("calendar") },
-                      { icon: Settings, label: "Impostazioni", color: "text-muted-foreground" },
+                      { icon: Settings, label: "Impostazioni", color: "text-muted-foreground", onClick: () => setActiveTab("settings") },
                     ].map((action) => (
                       <button key={action.label} onClick={action.onClick} className="w-full flex items-center gap-3 p-3 rounded-xl bg-secondary/30 hover:bg-secondary/50 transition-colors text-left">
                         <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center">
@@ -101,6 +103,8 @@ export default function Dashboard() {
           <AnalyticsDashboard />
         ) : activeTab === "loyalty" ? (
           <LoyaltySystem />
+        ) : activeTab === "settings" ? (
+          <SettingsPanel />
         ) : (
           <SchedulerCalendar />
         )}
