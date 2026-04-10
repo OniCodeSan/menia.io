@@ -20,7 +20,7 @@ export default function FanPortal() {
     base44.auth.me()
       .then((u) => {
         if (u.role === "fan" || u.role === "admin") {
-          window.location.href = "/feed";
+          window.location.href = "/fan-dashboard";
         } else if (u.role === "creator") {
           setAccessDenied(true);
         } else {
