@@ -1,13 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Zap, Menu, X } from "lucide-react";
-import { useState } from "react";
+import { Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Navbar() {
-  const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
-  
+
   const navLinks = [
     { label: "Feed", path: "/feed" },
     { label: "Esplora", path: "/explore" },
@@ -60,45 +58,9 @@ export default function Navbar() {
           </Link>
         </div>
 
-        {/* Mobile menu */}
-        <button 
-          className="md:hidden p-2 text-muted-foreground"
-          onClick={() => setMobileOpen(!mobileOpen)}
-        >
-          {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
+
       </div>
 
-      {/* Mobile dropdown */}
-      {mobileOpen && (
-        <motion.div 
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="md:hidden glass-strong border-b border-border/50 px-4 pb-4"
-        >
-          <div className="flex flex-col gap-1">
-            {navLinks.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                onClick={() => setMobileOpen(false)}
-                className={`px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                  location.pathname === link.path
-                    ? "text-primary bg-primary/10"
-                    : "text-muted-foreground"
-                }`}
-              >
-                {link.label}
-              </Link>
-            ))}
-            <div className="mt-3 flex flex-col gap-2">
-              <Button size="sm" className="bg-primary hover:bg-primary/90 glow-primary font-semibold w-full">
-                Diventa Creator
-              </Button>
-            </div>
-          </div>
-        </motion.div>
-      )}
     </motion.nav>
   );
 }
