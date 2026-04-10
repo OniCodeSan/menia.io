@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { base44 } from "@/api/base44Client";
 
 export default function Navbar() {
   const location = useLocation();
@@ -46,11 +47,9 @@ export default function Navbar() {
         </div>
 
         <div className="hidden md:flex items-center gap-3">
-          <Link to="/fan-portal">
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-              Accedi
-            </Button>
-          </Link>
+          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => base44.auth.redirectToLogin('/fan-dashboard')}>
+            Accedi
+          </Button>
           <Link to="/creator-onboarding">
             <Button size="sm" className="bg-primary hover:bg-primary/90 glow-primary font-semibold">
               Diventa Creator
