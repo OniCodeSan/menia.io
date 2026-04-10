@@ -40,7 +40,7 @@ export default function Dashboard() {
             {[
               { id: "overview", label: "Overview" },
               { id: "analytics", label: "Analytics" },
-              { id: "loyalty", label: "Fedeltà Fan" },
+              { id: "loyalty", label: "Fan" },
               { id: "calendar", label: "Calendario" },
               { id: "settings", label: "Impostazioni" },
             ].map((tab) => (
