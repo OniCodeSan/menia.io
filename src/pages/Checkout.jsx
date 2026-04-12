@@ -1,19 +1,42 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { CreditCard, Shield, ArrowLeft, Check, Crown, Lock } from "lucide-react";
+import { Shield, ArrowLeft, Check, Crown, Lock, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Link } from "react-router-dom";
+import { base44 } from "@/api/base44Client";
+
+// price IDs
+const PRICE_IDS = {
+  monthly: "price_1TLW1hKGgg4giFxc1pIVi1DJ", // Pro €9.99/mese
+  yearly: "price_1TLW1hKGgg4giFxcmAidRxnx",  // Base €4.99/mese (placeholder annuale)
+};
 
 export default function Checkout() {
   const [plan, setPlan] = useState("monthly");
   const [processing, setProcessing] = useState(false);
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
+    if (window.self !== window.top) {
+      alert("I pagamenti funzionano solo dall'app pubblicata, non dall'anteprima.");
+      return;
+    }
     setProcessing(true);
-    setTimeout(() => setProcessing(false), 2000);
+    try {
+      const res = await base44.functions.invoke("stripeCheckout", {
+        type: "subscription",
+        priceId: PRICE_IDS[plan],
+        creatorName: "Sara Rossi",
+        successUrl: window.location.origin + "/checkout?success=true",
+        cancelUrl: window.location.origin + "/checkout?cancelled=true",
+      });
+      if (res.data?.url) {
+        window.location.href = res.data.url;
+      }
+    } catch (e) {
+      console.error(e);
+      setProcessing(false);
+    }
   };
 
   return (
@@ -67,51 +90,28 @@ export default function Checkout() {
               </RadioGroup>
             </div>
 
-            {/* Payment details */}
+            {/* Checkout CTA */}
             <div className="bg-card/50 border border-border/30 rounded-2xl p-6">
-              <h3 className="font-heading font-bold text-sm mb-4">Dati di pagamento</h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <Label className="text-xs text-muted-foreground mb-1.5 block">Nome sulla carta</Label>
-                  <Input placeholder="Mario Rossi" className="bg-secondary/30 border-border/30 h-11" />
-                </div>
-                
-                <div>
-                  <Label className="text-xs text-muted-foreground mb-1.5 block">Numero carta</Label>
-                  <Input placeholder="4242 4242 4242 4242" className="bg-secondary/30 border-border/30 h-11" />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-xs text-muted-foreground mb-1.5 block">Scadenza</Label>
-                    <Input placeholder="MM/AA" className="bg-secondary/30 border-border/30 h-11" />
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground mb-1.5 block">CVV</Label>
-                    <Input placeholder="123" className="bg-secondary/30 border-border/30 h-11" />
-                  </div>
-                </div>
-              </div>
+              <p className="text-sm text-muted-foreground mb-4">Verrai reindirizzato alla pagina di pagamento sicura di Stripe per completare l'acquisto.</p>
 
               <Button 
                 onClick={handleCheckout}
                 disabled={processing}
-                className="w-full mt-6 bg-primary hover:bg-primary/90 glow-primary font-semibold h-12 text-base"
+                className="w-full bg-primary hover:bg-primary/90 glow-primary font-semibold h-12 text-base"
               >
                 {processing ? (
-                  <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                  <Loader2 className="w-5 h-5 animate-spin" />
                 ) : (
                   <>
                     <Lock className="w-4 h-4 mr-2" />
-                    Paga {plan === "monthly" ? "€9.99" : "€83.88"}
+                    Procedi al pagamento — {plan === "monthly" ? "€9.99/mese" : "€83.88/anno"}
                   </>
                 )}
               </Button>
 
               <div className="flex items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
                 <Shield className="w-3.5 h-3.5" />
-                <span>Pagamento sicuro e criptato</span>
+                <span>Pagamento sicuro gestito da Stripe</span>
               </div>
             </div>
           </motion.div>
