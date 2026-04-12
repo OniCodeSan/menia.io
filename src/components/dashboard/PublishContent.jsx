@@ -9,8 +9,8 @@ import { Label } from "@/components/ui/label";
 
 const CONTENT_TYPES = [
   { id: "post", label: "Post", icon: FileText, color: "text-accent", bg: "bg-accent/10 border-accent/30" },
-  { id: "video", label: "Video", icon: Video, color: "text-primary", bg: "bg-primary/10 border-primary/30" }, color: "text-primary", bg: "bg-primary/10 border-primary/30" },
-  { id: "photo", label: "Foto", icon: ImageIcon, color: "text-chart-3", bg: "bg-chart-3/10 border-chart-3/30" }, color: "text-chart-3", bg: "bg-chart-3/10 border-chart-3/30" },
+  { id: "video", label: "Video", icon: Video, color: "text-primary", bg: "bg-primary/10 border-primary/30" },
+  { id: "photo", label: "Foto", icon: ImageIcon, color: "text-chart-3", bg: "bg-chart-3/10 border-chart-3/30" },
 ];
 
 const ACCESS_LEVELS = [
@@ -24,8 +24,8 @@ export default function PublishContent() {
   const [access, setAccess] = useState("subscribers");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [file, setFile] = useState(null); // original File
-  const [fileReady, setFileReady] = useState(null); // compressed File (or original for video)
+  const [file, setFile] = useState(null);
+  const [fileReady, setFileReady] = useState(null);
   const [price, setPrice] = useState("");
   const [publishing, setPublishing] = useState(false);
   const [published, setPublished] = useState(false);
@@ -99,7 +99,7 @@ export default function PublishContent() {
         </div>
       </div>
 
-      {/* File upload — with auto-compression via MediaUploader */}
+      {/* File upload */}
       <div className="bg-card/50 border border-border/30 rounded-2xl p-5">
         <p className="text-sm font-semibold mb-4">File</p>
         <MediaUploader contentType={contentType} onFileReady={handleFileReady} />
