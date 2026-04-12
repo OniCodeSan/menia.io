@@ -23,10 +23,10 @@ export default function OnboardingCTA() {
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">entrate?</span>
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto mb-8">
-            Unisciti a migliaia di creator che hanno già scelto CreatorOS per monetizzare la loro community. Inizia gratuitamente.
+            Unisciti a migliaia di creator che hanno già scelto Unlockr per monetizzare la loro community. Inizia gratuitamente.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/feed">
+            <Link to="/creator-onboarding">
               <Button size="lg" className="bg-primary hover:bg-primary/90 glow-primary font-semibold text-base px-8 h-12 group">
                 Inizia ora — è gratis
                 <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />

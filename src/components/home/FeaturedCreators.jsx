@@ -14,7 +14,7 @@ const creators = [
   {
     name: "Marco Bianchi",
     handle: "@marcob",
-    category: "Photography",
+    category: "Fotografia",
     image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=500&fit=crop&crop=face",
     fans: "8.2K",
     rating: 4.8,
@@ -22,7 +22,7 @@ const creators = [
   {
     name: "Elena Conti",
     handle: "@elenaconti",
-    category: "Music & Art",
+    category: "Musica & Arte",
     image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&h=500&fit=crop&crop=face",
     fans: "15.1K",
     rating: 5.0,
