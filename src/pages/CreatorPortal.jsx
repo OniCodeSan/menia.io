@@ -25,6 +25,7 @@ export default function CreatorPortal() {
           window.location.href = "/dashboard";
         } else {
           setAccessDenied(true);
+          setChecking(false);
         }
       })
       .catch(() => {

@@ -46,13 +46,13 @@ export default function HeroSection() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link to="/feed">
+              <Link to="/creator-onboarding">
                 <Button size="lg" className="bg-primary hover:bg-primary/90 glow-primary font-semibold text-base px-8 h-12 w-full sm:w-auto group">
                   Diventa Creator
                   <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
-              <Link to="/feed">
+              <Link to="/explore">
                 <Button size="lg" variant="outline" className="border-border/50 hover:bg-secondary font-medium text-base px-8 h-12 w-full sm:w-auto group">
                   <Play className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
                   Esplora contenuti

@@ -23,6 +23,7 @@ export default function FanPortal() {
           window.location.href = "/fan-dashboard";
         } else if (u.role === "creator") {
           setAccessDenied(true);
+          setChecking(false);
         } else {
           setChecking(false);
         }

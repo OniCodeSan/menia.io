@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 export default function AuthGuard({ children, allowedRoles }) {
   const [status, setStatus] = useState("loading"); // loading | ok | unauthorized | forbidden
@@ -61,6 +62,14 @@ export default function AuthGuard({ children, allowedRoles }) {
           <p className="text-muted-foreground text-sm max-w-xs">
             Non hai i permessi per accedere a questa sezione.
           </p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Link to="/creator-onboarding">
+            <Button className="bg-primary hover:bg-primary/90 glow-primary">Diventa Creator</Button>
+          </Link>
+          <Link to="/explore">
+            <Button variant="outline" className="border-border/50">Esplora contenuti</Button>
+          </Link>
         </div>
       </div>
     );

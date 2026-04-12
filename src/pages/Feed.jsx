@@ -10,6 +10,13 @@ export default function Feed() {
   const [activeCategory, setActiveCategory] = useState("Tutti");
   const [searchQuery, setSearchQuery] = useState("");
 
+  const filtered = feedContents.filter(item => {
+    const matchesCategory = activeCategory === "Tutti" || item.category === activeCategory;
+    const q = searchQuery.toLowerCase().trim();
+    const matchesSearch = !q || item.title.toLowerCase().includes(q) || item.creatorName.toLowerCase().includes(q);
+    return matchesCategory && matchesSearch;
+  });
+
   return (
     <div className="min-h-screen">
       {/* Header */}
@@ -64,11 +71,18 @@ export default function Feed() {
 
       {/* Content grid */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-20">
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {feedContents.map((content, i) => (
-            <CreatorCard key={content.id} content={content} index={i} />
-          ))}
-        </div>
+        {filtered.length === 0 ? (
+          <div className="text-center py-20 text-muted-foreground">
+            <p className="text-sm font-medium">Nessun contenuto trovato</p>
+            <p className="text-xs mt-1">Prova con parole chiave diverse o cambia categoria</p>
+          </div>
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filtered.map((content, i) => (
+              <CreatorCard key={content.id} content={content} index={i} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

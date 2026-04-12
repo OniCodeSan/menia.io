@@ -49,6 +49,12 @@ const AuthenticatedApp = () => {
   // Render the main app
   return (
     <Routes>
+      {/* Standalone full-page flows (no Navbar/BottomNav) */}
+      <Route path="/fan-portal" element={<FanPortal />} />
+      <Route path="/creator-portal" element={<CreatorPortal />} />
+      <Route path="/creator-onboarding" element={<CreatorOnboarding />} />
+
+      {/* Main app with layout */}
       <Route element={<AppLayout />}>
         <Route path="/" element={<Home />} />
         <Route path="/feed" element={<Feed />} />
@@ -61,11 +67,8 @@ const AuthenticatedApp = () => {
         <Route path="/live-discover" element={<LiveDiscover />} />
         <Route path="/live" element={<LiveWatch />} />
         <Route path="/go-live" element={<GoLive />} />
-        <Route path="/creator-portal" element={<CreatorPortal />} />
-        <Route path="/fan-dashboard" element={<FanDashboard />} />
-        <Route path="/fan-portal" element={<FanPortal />} />
         <Route path="/admin-console" element={<AdminConsole />} />
-        <Route path="/creator-onboarding" element={<CreatorOnboarding />} />
+        <Route path="/fan-dashboard" element={<FanDashboard />} />
         <Route path="*" element={<PageNotFound />} />
       </Route>
     </Routes>

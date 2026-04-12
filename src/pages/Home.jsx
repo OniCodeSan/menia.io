@@ -22,14 +22,14 @@ export default function Home() {
             <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
               <Zap className="w-4 h-4 text-primary" />
             </div>
-            <span className="font-heading font-bold">CreatorOS</span>
+            <span className="font-heading font-bold">Unlockr</span>
           </Link>
           <div className="flex gap-6 text-sm text-muted-foreground">
             <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
             <a href="#" className="hover:text-foreground transition-colors">Termini</a>
             <a href="#" className="hover:text-foreground transition-colors">Supporto</a>
           </div>
-          <p className="text-xs text-muted-foreground">© 2026 CreatorOS. Tutti i diritti riservati.</p>
+          <p className="text-xs text-muted-foreground">© 2026 Unlockr. Tutti i diritti riservati.</p>
         </div>
       </footer>
     </div>
