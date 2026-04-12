@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Star, Users, Grid3X3, Crown, Lock, MessageCircle, Heart } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
+import DonationModal from "../components/payments/DonationModal";
+import SubscriptionModal from "../components/payments/SubscriptionModal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,6 +12,8 @@ import { creatorProfile } from "../lib/mockData";
 
 export default function CreatorProfile() {
   const creator = creatorProfile;
+  const [showDonation, setShowDonation] = useState(false);
+  const [showSubscription, setShowSubscription] = useState(false);
 
   return (
     <div className="min-h-screen">
@@ -68,20 +73,34 @@ export default function CreatorProfile() {
               </div>
             </div>
 
-            <div className="flex gap-3">
-              <Link to="/checkout">
-                <Button className="bg-primary hover:bg-primary/90 glow-primary font-semibold">
-                  <Crown className="w-4 h-4 mr-2" />
-                  Abbonati
-                </Button>
-              </Link>
+            <div className="flex gap-3 flex-wrap">
+              <Button
+                onClick={() => setShowSubscription(true)}
+                className="bg-primary hover:bg-primary/90 glow-primary font-semibold"
+              >
+                <Crown className="w-4 h-4 mr-2" />
+                Abbonati
+              </Button>
               <Button variant="outline" className="border-border/50">
                 <MessageCircle className="w-4 h-4 mr-2" />
                 Messaggio
               </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowDonation(true)}
+                className="border-chart-5/40 text-chart-5 hover:bg-chart-5/10"
+              >
+                <Heart className="w-4 h-4 mr-2" />
+                Dona
+              </Button>
             </div>
           </div>
         </motion.div>
+
+        <AnimatePresence>
+          {showDonation && <DonationModal creatorName={creator.name} onClose={() => setShowDonation(false)} />}
+          {showSubscription && <SubscriptionModal creatorName={creator.name} onClose={() => setShowSubscription(false)} />}
+        </AnimatePresence>
 
         {/* Tabs */}
         <Tabs defaultValue="all" className="mt-10">
@@ -113,11 +132,9 @@ export default function CreatorProfile() {
               <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="font-heading font-bold text-lg mb-2">Community riservata</h3>
               <p className="text-sm text-muted-foreground mb-4">Abbonati per accedere alla community esclusiva di {creator.name}</p>
-              <Link to="/checkout">
-                <Button className="bg-primary hover:bg-primary/90 glow-primary">
-                  Abbonati per accedere
-                </Button>
-              </Link>
+              <Button onClick={() => setShowSubscription(true)} className="bg-primary hover:bg-primary/90 glow-primary">
+                Abbonati per accedere
+              </Button>
             </div>
           </TabsContent>
         </Tabs>

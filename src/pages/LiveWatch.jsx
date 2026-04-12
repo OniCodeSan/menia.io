@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Users, Zap, Radio, Crown, Share2, Heart, ArrowLeft, Play, Volume2, VolumeX, Maximize2 } from "lucide-react";
+import LiveAccessButton from "../components/payments/LiveAccessButton";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import LiveChat from "../components/live/LiveChat";
@@ -69,6 +70,7 @@ export default function LiveWatch() {
   const [viewers] = useState(1247);
   const [totalDonations] = useState(340);
   const [liked, setLiked] = useState(false);
+  const [hasAccess, setHasAccess] = useState(false);
   const [currentDonation, setCurrentDonation] = useState(null);
   const [showSidePanel, setShowSidePanel] = useState("chat");
 
@@ -85,6 +87,24 @@ export default function LiveWatch() {
           <ArrowLeft className="w-4 h-4" />
           Torna ai live
         </Link>
+
+        {/* Live access gate */}
+        {!hasAccess && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 bg-card/60 border border-destructive/20 rounded-2xl p-5 flex flex-col sm:flex-row items-center gap-4"
+          >
+            <div className="flex-1">
+              <p className="font-heading font-bold text-sm mb-0.5">🔴 Live esclusiva — accesso a pagamento</p>
+              <p className="text-xs text-muted-foreground">Acquista il biglietto singolo per guardare questa live in diretta.</p>
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
+              <LiveAccessButton creatorName="Sara Rossi" />
+              <button onClick={() => setHasAccess(true)} className="text-xs text-muted-foreground underline">Già abbonato? Accedi</button>
+            </div>
+          </motion.div>
+        )}
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Main stream area */}
