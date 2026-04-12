@@ -128,6 +128,7 @@ export const categories = [
   "Tech",
   "Arte",
   "Cucina",
+  "Viaggi",
 ];
 
 export const creatorProfile = {

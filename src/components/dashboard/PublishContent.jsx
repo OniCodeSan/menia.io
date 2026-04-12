@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Upload, Image, Video, FileText, Lock, Globe, Users, X, CheckCircle2, Loader2 } from "lucide-react";
+import { Upload, FileText, Video, ImageIcon, Lock, Globe, Users, CheckCircle2, Loader2 } from "lucide-react";
+import { base44 } from "@/api/base44Client";
+import MediaUploader from "./MediaUploader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 const CONTENT_TYPES = [
   { id: "post", label: "Post", icon: FileText, color: "text-accent", bg: "bg-accent/10 border-accent/30" },
-  { id: "video", label: "Video", icon: Video, color: "text-primary", bg: "bg-primary/10 border-primary/30" },
-  { id: "photo", label: "Foto", icon: Image, color: "text-chart-3", bg: "bg-chart-3/10 border-chart-3/30" },
+  { id: "video", label: "Video", icon: Video, color: "text-primary", bg: "bg-primary/10 border-primary/30" }, color: "text-primary", bg: "bg-primary/10 border-primary/30" },
+  { id: "photo", label: "Foto", icon: ImageIcon, color: "text-chart-3", bg: "bg-chart-3/10 border-chart-3/30" }, color: "text-chart-3", bg: "bg-chart-3/10 border-chart-3/30" },
 ];
 
 const ACCESS_LEVELS = [
@@ -22,20 +24,24 @@ export default function PublishContent() {
   const [access, setAccess] = useState("subscribers");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [file, setFile] = useState(null);
+  const [file, setFile] = useState(null); // original File
+  const [fileReady, setFileReady] = useState(null); // compressed File (or original for video)
   const [price, setPrice] = useState("");
   const [publishing, setPublishing] = useState(false);
   const [published, setPublished] = useState(false);
 
-  const handleFile = (e) => {
-    const f = e.target.files?.[0];
-    if (f) setFile(f);
+  const handleFileReady = (original, compressed) => {
+    setFile(original);
+    setFileReady(compressed || original);
   };
 
-  const handlePublish = () => {
+  const handlePublish = async () => {
     if (!title.trim()) return;
     setPublishing(true);
-    setTimeout(() => {
+    try {
+      if (fileReady) {
+        await base44.integrations.Core.UploadFile({ file: fileReady });
+      }
       setPublishing(false);
       setPublished(true);
       setTimeout(() => {
@@ -43,9 +49,12 @@ export default function PublishContent() {
         setTitle("");
         setDescription("");
         setFile(null);
+        setFileReady(null);
         setPrice("");
       }, 2500);
-    }, 1800);
+    } catch (err) {
+      setPublishing(false);
+    }
   };
 
   if (published) {
@@ -90,30 +99,10 @@ export default function PublishContent() {
         </div>
       </div>
 
-      {/* File upload */}
-      <div className="bg-card/50 border border-border/30 rounded-2xl p-5 space-y-4">
-        <p className="text-sm font-semibold">File</p>
-        {file ? (
-          <div className="flex items-center gap-3 p-3 bg-secondary/40 rounded-xl border border-border/30">
-            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Upload className="w-4 h-4 text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{file.name}</p>
-              <p className="text-xs text-muted-foreground">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
-            </div>
-            <button onClick={() => setFile(null)} className="text-muted-foreground hover:text-destructive">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        ) : (
-          <label className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-border/40 rounded-xl cursor-pointer hover:border-primary/40 hover:bg-primary/5 transition-all">
-            <Upload className="w-7 h-7 text-muted-foreground mb-2" />
-            <p className="text-sm text-muted-foreground">Trascina qui o <span className="text-primary">sfoglia</span></p>
-            <p className="text-xs text-muted-foreground/60 mt-1">MP4, MOV, JPG, PNG · Max 500MB</p>
-            <input type="file" className="hidden" accept="image/*,video/*" onChange={handleFile} />
-          </label>
-        )}
+      {/* File upload — with auto-compression via MediaUploader */}
+      <div className="bg-card/50 border border-border/30 rounded-2xl p-5">
+        <p className="text-sm font-semibold mb-4">File</p>
+        <MediaUploader contentType={contentType} onFileReady={handleFileReady} />
       </div>
 
       {/* Details */}
