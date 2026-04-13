@@ -88,8 +88,8 @@ export default function Navbar() {
             </Link>
           )}
 
-          {/* Token purchase */}
-          <div className="relative" ref={tokenRef}>
+          {/* Token purchase — solo utenti loggati */}
+          {currentUser && (<div className="relative" ref={tokenRef}>
             <button
               onClick={() => setShowTokenMenu(v => !v)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-chart-4 bg-chart-4/10 hover:bg-chart-4/20 transition-all border border-chart-4/30"
@@ -132,6 +132,7 @@ export default function Navbar() {
               )}
             </AnimatePresence>
           </div>
+          )}
           <Button
             variant="ghost"
             size="sm"
