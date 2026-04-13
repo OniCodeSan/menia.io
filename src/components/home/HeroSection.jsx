@@ -111,9 +111,7 @@ export default function HeroSection() {
                 <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
                 
                 {/* Floating card */}
-                <motion.div 
-                  animate={{ y: [0, -8, 0] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                <div
                   className="absolute bottom-8 left-6 right-6 glass rounded-xl p-4 border border-border/50"
                 >
                   <div className="flex items-center justify-between mb-3">
@@ -147,7 +145,7 @@ export default function HeroSection() {
                       <p className="text-sm font-bold">35%</p>
                     </div>
                   </div>
-                </motion.div>
+                </div>
               </div>
             </div>
           </motion.div>
