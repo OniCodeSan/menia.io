@@ -4,9 +4,13 @@ import { Zap, X, LogIn, Rocket, Coins, ChevronDown, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
 import { useState, useRef, useEffect } from "react";
+import { useLanguage } from "@/lib/LanguageContext";
+import LanguageSwitcher from "@/components/shared/LanguageSwitcher";
 
 export default function Navbar() {
   const location = useLocation();
+  const { t } = useLanguage();
+  const nav = t.nav;
   const [showCreatorGate, setShowCreatorGate] = useState(false);
   const [showTokenMenu, setShowTokenMenu] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
@@ -41,11 +45,11 @@ export default function Navbar() {
   }, []);
 
   const navLinks = [
-    { label: "Feed", path: "/feed" },
-    { label: "Esplora", path: "/explore" },
-    { label: "Live", path: "/live-discover" },
-    { label: "Messaggi", path: "/messages" },
-    { label: "Dashboard", path: "/dashboard" },
+    { label: nav.feed, path: "/feed" },
+    { label: nav.explore, path: "/explore" },
+    { label: nav.live, path: "/live-discover" },
+    { label: nav.messages, path: "/messages" },
+    { label: nav.dashboard, path: "/dashboard" },
   ];
 
   return (
@@ -80,22 +84,25 @@ export default function Navbar() {
         </div>
 
         <div className="hidden md:flex items-center gap-3">
+          {/* Language switcher */}
+          <LanguageSwitcher />
+
           {/* User wallet balance */}
           {currentUser && (
             <Link to="/token-wallet" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-chart-4 bg-chart-4/10 hover:bg-chart-4/20 transition-all border border-chart-4/30">
               <Coins className="w-4 h-4" />
-              {userWallet ? `${userWallet.balance.toLocaleString()} T` : "Wallet"}
+              {userWallet ? `${userWallet.balance.toLocaleString()} T` : nav.wallet}
             </Link>
           )}
 
-          {/* Token purchase — solo utenti loggati */}
+          {/* Token purchase */}
           {currentUser && (<div className="relative" ref={tokenRef}>
             <button
               onClick={() => setShowTokenMenu(v => !v)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-chart-4 bg-chart-4/10 hover:bg-chart-4/20 transition-all border border-chart-4/30"
             >
               <Coins className="w-4 h-4" />
-              Acquista Token
+              {nav.buyTokens}
               <ChevronDown className={`w-3 h-3 transition-transform ${showTokenMenu ? "rotate-180" : ""}`} />
             </button>
             <AnimatePresence>
@@ -107,7 +114,7 @@ export default function Navbar() {
                   transition={{ duration: 0.15 }}
                   className="absolute right-0 top-11 w-64 bg-card border border-border/50 rounded-2xl p-3 shadow-2xl z-50"
                 >
-                  <p className="text-xs font-semibold text-muted-foreground px-2 mb-2 uppercase tracking-wide">Pacchetti Token</p>
+                  <p className="text-xs font-semibold text-muted-foreground px-2 mb-2 uppercase tracking-wide">{nav.tokenPackages}</p>
                   {TOKEN_PACKAGES.map((pkg, i) => (
                     <Link
                       key={i}
@@ -125,7 +132,7 @@ export default function Navbar() {
                   <div className="border-t border-border/20 mt-2 pt-2">
                     <Link to="/token-wallet" onClick={() => setShowTokenMenu(false)}
                       className="block text-center text-xs text-primary hover:underline py-1">
-                      Vedi il tuo wallet →
+                      {nav.viewWallet}
                     </Link>
                   </div>
                 </motion.div>
@@ -141,7 +148,7 @@ export default function Navbar() {
               <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
                 <User className="w-3.5 h-3.5 text-primary" />
               </div>
-              <span className="text-sm font-medium max-w-[80px] truncate">{currentUser.full_name?.split(' ')[0] || 'Profilo'}</span>
+              <span className="text-sm font-medium max-w-[80px] truncate">{currentUser.full_name?.split(' ')[0] || nav.profile}</span>
             </Link>
           ) : (
             <Button
@@ -150,7 +157,7 @@ export default function Navbar() {
               className="text-muted-foreground hover:text-foreground"
               onClick={() => base44.auth.redirectToLogin('/fan-dashboard')}
             >
-              Accedi
+              {nav.login}
             </Button>
           )}
 
@@ -161,7 +168,7 @@ export default function Navbar() {
               className="bg-primary hover:bg-primary/90 glow-primary font-semibold"
               onClick={() => setShowCreatorGate(v => !v)}
             >
-              Diventa Creator
+              {nav.becomeCreator}
             </Button>
 
             <AnimatePresence>
@@ -176,20 +183,20 @@ export default function Navbar() {
                   <button onClick={() => setShowCreatorGate(false)} className="absolute top-3 right-3 text-muted-foreground hover:text-foreground">
                     <X className="w-4 h-4" />
                   </button>
-                  <p className="font-heading font-bold text-sm mb-1">Sei già tra i nostri creator?</p>
-                  <p className="text-xs text-muted-foreground mb-4">Accedi al tuo account o inizia il percorso di registrazione.</p>
+                  <p className="font-heading font-bold text-sm mb-1">{nav.creatorGate.title}</p>
+                  <p className="text-xs text-muted-foreground mb-4">{nav.creatorGate.subtitle}</p>
                   <div className="space-y-2">
                     <Button
                       className="w-full h-9 bg-primary hover:bg-primary/90 font-semibold text-sm"
                       onClick={() => { setShowCreatorGate(false); base44.auth.redirectToLogin('/dashboard'); }}
                     >
                       <LogIn className="w-4 h-4 mr-2" />
-                      Sì, accedi come Creator
+                      {nav.creatorGate.loginBtn}
                     </Button>
                     <Link to="/creator-onboarding" onClick={() => setShowCreatorGate(false)}>
                       <Button variant="outline" className="w-full h-9 border-border/50 text-sm font-semibold">
                         <Rocket className="w-4 h-4 mr-2" />
-                        No, inizia la registrazione
+                        {nav.creatorGate.registerBtn}
                       </Button>
                     </Link>
                   </div>

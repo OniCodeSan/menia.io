@@ -5,8 +5,12 @@ import FeaturedCreators from "../components/home/FeaturedCreators";
 import OnboardingCTA from "../components/home/OnboardingCTA";
 import { Zap } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useLanguage } from "@/lib/LanguageContext";
 
 export default function Home() {
+  const { t } = useLanguage();
+  const f = t.footer;
+
   return (
     <div>
       <HeroSection />
@@ -25,11 +29,11 @@ export default function Home() {
             <span className="font-heading font-bold">Unlockr</span>
           </Link>
           <div className="flex gap-6 text-sm text-muted-foreground">
-            <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
-            <a href="#" className="hover:text-foreground transition-colors">Termini</a>
-            <a href="#" className="hover:text-foreground transition-colors">Supporto</a>
+            <a href="#" className="hover:text-foreground transition-colors">{f.privacy}</a>
+            <a href="#" className="hover:text-foreground transition-colors">{f.terms}</a>
+            <a href="#" className="hover:text-foreground transition-colors">{f.support}</a>
           </div>
-          <p className="text-xs text-muted-foreground">© 2026 Unlockr. Tutti i diritti riservati.</p>
+          <p className="text-xs text-muted-foreground">{f.copyright}</p>
         </div>
       </footer>
     </div>

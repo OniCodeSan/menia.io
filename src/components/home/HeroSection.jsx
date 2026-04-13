@@ -2,8 +2,12 @@ import { motion } from "framer-motion";
 import { ArrowRight, Play, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { useLanguage } from "@/lib/LanguageContext";
 
 export default function HeroSection() {
+  const { t } = useLanguage();
+  const h = t.hero;
+
   return (
     <section className="relative min-h-[90vh] flex items-center overflow-hidden">
       {/* Background effects */}
@@ -31,31 +35,31 @@ export default function HeroSection() {
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/30 bg-primary/10 mb-8"
             >
               <Sparkles className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium text-primary">La piattaforma #1 per creator</span>
+              <span className="text-sm font-medium text-primary">{h.badge}</span>
             </motion.div>
 
             <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-6">
-              Guadagna di più dai tuoi fan,{" "}
+              {h.title1}{" "}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent glow-text">
-                automaticamente
+                {h.title2}
               </span>
             </h1>
             
             <p className="text-lg text-muted-foreground max-w-lg mb-10 leading-relaxed">
-              Pubblica contenuti esclusivi, automatizza il tuo funnel e trasforma ogni fan in un abbonato premium. Tutto in un'unica piattaforma.
+              {h.subtitle}
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4">
               <Link to="/creator-onboarding">
                 <Button size="lg" className="bg-primary hover:bg-primary/90 glow-primary font-semibold text-base px-8 h-12 w-full sm:w-auto group">
-                  Diventa Creator
+                  {h.cta1}
                   <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
               <Link to="/explore">
                 <Button size="lg" variant="outline" className="border-border/50 hover:bg-secondary font-medium text-base px-8 h-12 w-full sm:w-auto group">
                   <Play className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
-                  Esplora contenuti
+                  {h.cta2}
                 </Button>
               </Link>
             </div>
@@ -83,8 +87,8 @@ export default function HeroSection() {
                 ))}
               </div>
               <div>
-                <p className="text-sm font-semibold text-foreground">+12.000 creator attivi</p>
-                <p className="text-xs text-muted-foreground">24M Token generati questo mese</p>
+                <p className="text-sm font-semibold text-foreground">{h.socialProof1}</p>
+                <p className="text-xs text-muted-foreground">{h.socialProof2}</p>
               </div>
             </motion.div>
           </motion.div>

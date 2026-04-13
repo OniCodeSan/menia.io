@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Star, Crown } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useLanguage } from "@/lib/LanguageContext";
 
 const creators = [
   {
@@ -38,6 +39,9 @@ const creators = [
 ];
 
 export default function FeaturedCreators() {
+  const { t } = useLanguage();
+  const f = t.featured;
+
   return (
     <section className="py-24 px-4 sm:px-6 relative">
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-accent/5 to-transparent" />
@@ -49,10 +53,10 @@ export default function FeaturedCreators() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <p className="text-primary font-semibold text-sm tracking-widest uppercase mb-3">Community</p>
+          <p className="text-primary font-semibold text-sm tracking-widest uppercase mb-3">{f.label}</p>
           <h2 className="font-heading text-3xl sm:text-4xl font-bold">
-            Creator in{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">evidenza</span>
+            {f.title1}{" "}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">{f.title2}</span>
           </h2>
         </motion.div>
 
@@ -74,17 +78,16 @@ export default function FeaturedCreators() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
                   
-                  {/* Badge */}
                   <div className="absolute top-3 right-3 flex items-center gap-1 px-2.5 py-1 rounded-full glass text-xs font-medium">
                     <Crown className="w-3 h-3 text-primary" />
-                    <span>Top Creator</span>
+                    <span>{f.topCreator}</span>
                   </div>
 
                   <div className="absolute bottom-0 left-0 right-0 p-4">
                     <h3 className="font-heading font-bold text-base">{creator.name}</h3>
                     <p className="text-xs text-muted-foreground mb-2">{creator.category}</p>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">{creator.fans} fan</span>
+                      <span className="text-xs text-muted-foreground">{creator.fans} {f.fans}</span>
                       <div className="flex items-center gap-1">
                         <Star className="w-3 h-3 text-chart-4 fill-chart-4" />
                         <span className="text-xs font-medium">{creator.rating}</span>

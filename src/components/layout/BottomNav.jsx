@@ -1,16 +1,19 @@
 import { Link, useLocation } from "react-router-dom";
 import { Home, Compass, Radio, MessageCircle, LayoutDashboard } from "lucide-react";
-
-const tabs = [
-  { label: "Home", path: "/", icon: Home },
-  { label: "Esplora", path: "/explore", icon: Compass },
-  { label: "Live", path: "/live-discover", icon: Radio },
-  { label: "Messaggi", path: "/messages", icon: MessageCircle },
-  { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-];
+import { useLanguage } from "@/lib/LanguageContext";
 
 export default function BottomNav() {
   const location = useLocation();
+  const { t } = useLanguage();
+  const bn = t.bottomNav;
+
+  const tabs = [
+    { label: bn.home, path: "/", icon: Home },
+    { label: bn.explore, path: "/explore", icon: Compass },
+    { label: bn.live, path: "/live-discover", icon: Radio },
+    { label: bn.messages, path: "/messages", icon: MessageCircle },
+    { label: bn.dashboard, path: "/dashboard", icon: LayoutDashboard },
+  ];
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden glass-strong border-t border-border/50">
