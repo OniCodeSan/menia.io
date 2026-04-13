@@ -134,7 +134,10 @@ export default function Navbar() {
           </div>
           )}
           {currentUser ? (
-            <Link to="/fan-dashboard" className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary/60 hover:bg-secondary transition-all border border-border/40">
+            <Link
+              to={currentUser.role === 'creator' || currentUser.role === 'admin' ? '/dashboard' : '/fan-dashboard'}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary/60 hover:bg-secondary transition-all border border-border/40"
+            >
               <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
                 <User className="w-3.5 h-3.5 text-primary" />
               </div>

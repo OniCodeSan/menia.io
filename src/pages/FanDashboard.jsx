@@ -142,7 +142,7 @@ export default function FanDashboard() {
   );
 
   return (
-    <AuthGuard allowedRoles={["fan", "user", "admin"]}>
+    <AuthGuard allowedRoles={["fan", "user"]}>
     <div className="min-h-screen">
       {/* Header */}
       <div className="border-b border-border/30 bg-card/30">
