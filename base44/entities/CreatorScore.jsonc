@@ -1,0 +1,67 @@
+{
+  "name": "CreatorScore",
+  "type": "object",
+  "properties": {
+    "creator_id": {
+      "type": "string"
+    },
+    "creator_name": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "global_conversion_rate": {
+      "type": "number",
+      "default": 0,
+      "description": "0-1"
+    },
+    "global_avg_spend": {
+      "type": "number",
+      "default": 0
+    },
+    "total_revenue_tokens": {
+      "type": "number",
+      "default": 0
+    },
+    "is_live": {
+      "type": "boolean",
+      "default": false
+    },
+    "live_viewers": {
+      "type": "number",
+      "default": 0
+    },
+    "boost_active": {
+      "type": "boolean",
+      "default": false
+    },
+    "boost_multiplier": {
+      "type": "number",
+      "default": 1.0
+    },
+    "onboarding_boost": {
+      "type": "boolean",
+      "default": false
+    },
+    "content_freshness_score": {
+      "type": "number",
+      "default": 0,
+      "description": "0-100, basato su ultimo post"
+    },
+    "is_new_creator": {
+      "type": "boolean",
+      "default": false
+    },
+    "last_active": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "creator_id"
+  ]
+}
