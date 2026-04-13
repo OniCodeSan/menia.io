@@ -133,14 +133,23 @@ export default function Navbar() {
             </AnimatePresence>
           </div>
           )}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground hover:text-foreground"
-            onClick={() => base44.auth.redirectToLogin('/fan-dashboard')}
-          >
-            Accedi
-          </Button>
+          {currentUser ? (
+            <Link to="/fan-dashboard" className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary/60 hover:bg-secondary transition-all border border-border/40">
+              <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
+                <User className="w-3.5 h-3.5 text-primary" />
+              </div>
+              <span className="text-sm font-medium max-w-[80px] truncate">{currentUser.full_name?.split(' ')[0] || 'Profilo'}</span>
+            </Link>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-foreground"
+              onClick={() => base44.auth.redirectToLogin('/fan-dashboard')}
+            >
+              Accedi
+            </Button>
+          )}
 
           {/* Creator gate */}
           <div className="relative" ref={gateRef}>
