@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, X, LogIn, Rocket, Coins, ChevronDown, User, Settings, LogOut, CircleDollarSign } from "lucide-react";
+import { Zap, X, LogIn, Rocket, Coins, ChevronDown, User, Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
 import { useState, useRef, useEffect } from "react";
@@ -66,9 +66,8 @@ export default function Navbar() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2 group">
-          <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center glow-primary group-hover:bg-primary/30 transition-all duration-300 relative">
-            <CircleDollarSign className="w-6 h-6 text-primary absolute" />
-            <Zap className="w-3 h-3 text-primary relative z-10" />
+          <div className="w-9 h-9 rounded-full border-2 border-primary bg-primary/20 flex items-center justify-center glow-primary group-hover:bg-primary/30 transition-all duration-300">
+            <Zap className="w-4 h-4 text-primary" />
           </div>
           <span className="font-heading font-bold text-lg tracking-tight">Tokaro.fans</span>
         </Link>
