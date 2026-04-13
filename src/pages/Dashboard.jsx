@@ -25,6 +25,18 @@ export default function Dashboard() {
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
+
+    // Check URL param for auto-open publish
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('action') === 'publish') {
+      setActiveTab('publish');
+      window.history.replaceState({}, '', '/dashboard');
+    }
+
+    // Listen for navbar publish event
+    const handler = () => setActiveTab('publish');
+    window.addEventListener('navbar:publish', handler);
+    return () => window.removeEventListener('navbar:publish', handler);
   }, []);
 
   return (
@@ -40,7 +52,7 @@ export default function Dashboard() {
             </div>
             <div className="flex gap-3">
               <NotificationsDropdown />
-              <Button size="sm" className="bg-primary hover:bg-primary/90 glow-primary">
+              <Button size="sm" className="bg-primary hover:bg-primary/90 glow-primary" onClick={() => setActiveTab('publish')}>
                 <Upload className="w-4 h-4 mr-2" />
                 Pubblica
               </Button>

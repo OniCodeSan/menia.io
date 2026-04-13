@@ -163,48 +163,65 @@ export default function Navbar() {
             </Button>
           )}
 
-          {/* Creator gate */}
+          {/* Creator gate / Pubblica */}
           <div className="relative" ref={gateRef}>
-            <Button
-              size="sm"
-              className="bg-primary hover:bg-primary/90 glow-primary font-semibold"
-              onClick={() => setShowCreatorGate(v => !v)}
-            >
-              {nav.becomeCreator}
-            </Button>
-
-            <AnimatePresence>
-              {showCreatorGate && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8, scale: 0.96 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 8, scale: 0.96 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute right-0 top-12 w-72 bg-card border border-border/50 rounded-2xl p-5 shadow-2xl z-50"
+            {currentUser && (currentUser.role === 'creator' || currentUser.role === 'admin') ? (
+              <Button
+                size="sm"
+                className="bg-primary hover:bg-primary/90 glow-primary font-semibold"
+                onClick={() => {
+                  if (window.location.pathname === '/dashboard') {
+                    window.dispatchEvent(new CustomEvent('navbar:publish'));
+                  } else {
+                    window.location.href = '/dashboard?action=publish';
+                  }
+                }}
+              >
+                Pubblica
+              </Button>
+            ) : (
+              <>
+                <Button
+                  size="sm"
+                  className="bg-primary hover:bg-primary/90 glow-primary font-semibold"
+                  onClick={() => setShowCreatorGate(v => !v)}
                 >
-                  <button onClick={() => setShowCreatorGate(false)} className="absolute top-3 right-3 text-muted-foreground hover:text-foreground">
-                    <X className="w-4 h-4" />
-                  </button>
-                  <p className="font-heading font-bold text-sm mb-1">{nav.creatorGate.title}</p>
-                  <p className="text-xs text-muted-foreground mb-4">{nav.creatorGate.subtitle}</p>
-                  <div className="space-y-2">
-                    <Button
-                      className="w-full h-9 bg-primary hover:bg-primary/90 font-semibold text-sm"
-                      onClick={() => { setShowCreatorGate(false); base44.auth.redirectToLogin('/dashboard'); }}
+                  {nav.becomeCreator}
+                </Button>
+                <AnimatePresence>
+                  {showCreatorGate && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 top-12 w-72 bg-card border border-border/50 rounded-2xl p-5 shadow-2xl z-50"
                     >
-                      <LogIn className="w-4 h-4 mr-2" />
-                      {nav.creatorGate.loginBtn}
-                    </Button>
-                    <Link to="/creator-onboarding" onClick={() => setShowCreatorGate(false)}>
-                      <Button variant="outline" className="w-full h-9 border-border/50 text-sm font-semibold">
-                        <Rocket className="w-4 h-4 mr-2" />
-                        {nav.creatorGate.registerBtn}
-                      </Button>
-                    </Link>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                      <button onClick={() => setShowCreatorGate(false)} className="absolute top-3 right-3 text-muted-foreground hover:text-foreground">
+                        <X className="w-4 h-4" />
+                      </button>
+                      <p className="font-heading font-bold text-sm mb-1">{nav.creatorGate.title}</p>
+                      <p className="text-xs text-muted-foreground mb-4">{nav.creatorGate.subtitle}</p>
+                      <div className="space-y-2">
+                        <Button
+                          className="w-full h-9 bg-primary hover:bg-primary/90 font-semibold text-sm"
+                          onClick={() => { setShowCreatorGate(false); base44.auth.redirectToLogin('/dashboard'); }}
+                        >
+                          <LogIn className="w-4 h-4 mr-2" />
+                          {nav.creatorGate.loginBtn}
+                        </Button>
+                        <Link to="/creator-onboarding" onClick={() => setShowCreatorGate(false)}>
+                          <Button variant="outline" className="w-full h-9 border-border/50 text-sm font-semibold">
+                            <Rocket className="w-4 h-4 mr-2" />
+                            {nav.creatorGate.registerBtn}
+                          </Button>
+                        </Link>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </>
+            )}
           </div>
         </div>
 
