@@ -5,21 +5,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { base44 } from "@/api/base44Client";
 
-const PRESET_AMOUNTS = [2, 5, 10, 20];
+const PRESET_AMOUNTS = [20, 50, 100, 200];
 
 export default function DonationModal({ creatorName, onClose }) {
   const [amount, setAmount] = useState(5);
   const [custom, setCustom] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const finalAmount = custom ? parseFloat(custom) : amount;
+  const finalAmount = custom ? parseInt(custom) : amount;
 
   const handleDonate = async () => {
     if (window.self !== window.top) {
       alert("I pagamenti funzionano solo dall'app pubblicata, non dall'anteprima.");
       return;
     }
-    if (!finalAmount || finalAmount < 1) return;
+    if (!finalAmount || finalAmount < 10) return;
     setLoading(true);
     try {
       const res = await base44.functions.invoke("stripeCheckout", {
@@ -55,7 +55,7 @@ export default function DonationModal({ creatorName, onClose }) {
           </button>
         </div>
 
-        <p className="text-sm text-muted-foreground">Scegli un importo o inseriscine uno personalizzato</p>
+        <p className="text-sm text-muted-foreground">Scegli un importo in Token o inseriscine uno personalizzato (min. 10)</p>
 
         <div className="grid grid-cols-4 gap-2">
           {PRESET_AMOUNTS.map((a) => (
@@ -68,13 +68,13 @@ export default function DonationModal({ creatorName, onClose }) {
                   : "border-border/30 text-muted-foreground hover:border-border/60"
               }`}
             >
-              €{a}
+              {a} T
             </button>
           ))}
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs text-muted-foreground">Importo personalizzato (€)</label>
+          <label className="text-xs text-muted-foreground">Importo personalizzato (Token)</label>
           <Input
             type="number"
             min="1"
@@ -87,11 +87,11 @@ export default function DonationModal({ creatorName, onClose }) {
 
         <Button
           onClick={handleDonate}
-          disabled={loading || !finalAmount || finalAmount < 1}
+          disabled={loading || !finalAmount || finalAmount < 10}
           className="w-full h-11 bg-chart-5 hover:bg-chart-5/90 font-semibold"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Heart className="w-4 h-4 mr-2" />}
-          Dona €{finalAmount || "—"}
+          Dona {finalAmount || "—"} Token
         </Button>
       </motion.div>
     </div>

@@ -8,7 +8,7 @@ const PLANS = [
   {
     id: "base",
     label: "Base",
-    price: "€4,99/mese",
+    price: "50 Token/mese",
     priceId: "price_1TLW1hKGgg4giFxcmAidRxnx",
     features: ["Contenuti esclusivi base", "Messaggi diretti", "Community access"],
     color: "border-primary/40 bg-primary/5",
@@ -17,7 +17,7 @@ const PLANS = [
   {
     id: "pro",
     label: "Pro",
-    price: "€9,99/mese",
+    price: "100 Token/mese",
     priceId: "price_1TLW1hKGgg4giFxc1pIVi1DJ",
     features: ["Tutto del piano Base", "Live esclusive", "Contenuti premium", "Badge fan Pro"],
     color: "border-chart-4/40 bg-chart-4/5",

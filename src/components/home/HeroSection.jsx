@@ -84,7 +84,7 @@ export default function HeroSection() {
               </div>
               <div>
                 <p className="text-sm font-semibold text-foreground">+12.000 creator attivi</p>
-                <p className="text-xs text-muted-foreground">€2.4M generati questo mese</p>
+                <p className="text-xs text-muted-foreground">24M Token generati questo mese</p>
               </div>
             </motion.div>
           </motion.div>
@@ -125,7 +125,7 @@ export default function HeroSection() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-lg font-bold text-primary">€8.400</p>
+                      <p className="text-lg font-bold text-primary">84.000 T</p>
                       <p className="text-xs text-muted-foreground">questo mese</p>
                     </div>
                   </div>

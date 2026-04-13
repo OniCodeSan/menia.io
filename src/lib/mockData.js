@@ -27,7 +27,7 @@ export const feedContents = [
   },
   {
     id: 3,
-    title: "Come ho guadagnato €10K in un mese con la musica — tutorial completo",
+    title: "Come ho guadagnato 100.000 Token in un mese con la musica — tutorial completo",
     image: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=600&h=800&fit=crop",
     type: "free",
     category: "Musica",
@@ -137,7 +137,7 @@ export const creatorProfile = {
   bio: "Fitness coach & lifestyle creator. Aiuto le persone a trasformare il proprio corpo e la propria mente. 💪 Ogni giorno nuovi contenuti esclusivi.",
   avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&h=300&fit=crop&crop=face",
   cover: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=1200&h=500&fit=crop",
-  subscriptionPrice: "€9.99/mese",
+  subscriptionPrice: "100 Token/mese",
   fans: "12.4K",
   posts: 234,
   rating: 4.9,
@@ -206,10 +206,10 @@ export const dashboardData = {
     { stage: "Premium", count: 320, color: "bg-chart-3" },
   ],
   topFans: [
-    { name: "Giovanni M.", email: "g.m@email.com", spent: "€240", status: "Premium", avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face" },
-    { name: "Alessia P.", email: "a.p@email.com", spent: "€180", status: "Abbonato", avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face" },
-    { name: "Davide R.", email: "d.r@email.com", spent: "€120", status: "Premium", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face" },
-    { name: "Chiara L.", email: "c.l@email.com", spent: "€95", status: "Abbonato", avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop&crop=face" },
-    { name: "Matteo G.", email: "m.g@email.com", spent: "€80", status: "Trial", avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop&crop=face" },
+    { name: "Giovanni M.", email: "g.m@email.com", spent: "2.400 T", status: "Premium", avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face" },
+    { name: "Alessia P.", email: "a.p@email.com", spent: "1.800 T", status: "Abbonato", avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face" },
+    { name: "Davide R.", email: "d.r@email.com", spent: "1.200 T", status: "Premium", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face" },
+    { name: "Chiara L.", email: "c.l@email.com", spent: "950 T", status: "Abbonato", avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop&crop=face" },
+    { name: "Matteo G.", email: "m.g@email.com", spent: "800 T", status: "Trial", avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop&crop=face" },
   ],
 };

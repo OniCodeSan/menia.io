@@ -68,7 +68,7 @@ export default function Checkout() {
                     <p className="text-sm font-semibold">Mensile</p>
                     <p className="text-xs text-muted-foreground">Accesso completo, rinnovo mensile</p>
                   </div>
-                  <p className="font-heading font-bold text-lg">€9.99<span className="text-xs text-muted-foreground font-normal">/mese</span></p>
+                  <p className="font-heading font-bold text-lg">100 T<span className="text-xs text-muted-foreground font-normal">/mese</span></p>
                 </label>
 
                 <label className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all relative ${
@@ -80,8 +80,8 @@ export default function Checkout() {
                     <p className="text-xs text-muted-foreground">Risparmia il 30% — fatturazione annuale</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-heading font-bold text-lg">€6.99<span className="text-xs text-muted-foreground font-normal">/mese</span></p>
-                    <p className="text-xs text-chart-3 font-semibold">Risparmia €36</p>
+                    <p className="font-heading font-bold text-lg">70 T<span className="text-xs text-muted-foreground font-normal">/mese</span></p>
+                    <p className="text-xs text-chart-3 font-semibold">Risparmia 360 T</p>
                   </div>
                   <div className="absolute -top-2 right-4 px-2 py-0.5 rounded-full bg-chart-3 text-[10px] font-bold text-background">
                     -30%
@@ -104,7 +104,7 @@ export default function Checkout() {
                 ) : (
                   <>
                     <Lock className="w-4 h-4 mr-2" />
-                    Procedi al pagamento — {plan === "monthly" ? "€9.99/mese" : "€83.88/anno"}
+                    Procedi al pagamento — {plan === "monthly" ? "100 T/mese" : "840 T/anno"}
                   </>
                 )}
               </Button>
@@ -158,17 +158,17 @@ export default function Checkout() {
               <div className="border-t border-border/30 pt-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Subtotale</span>
-                  <span>{plan === "monthly" ? "€9.99" : "€83.88"}</span>
+                  <span>{plan === "monthly" ? "100 T" : "840 T"}</span>
                 </div>
                 {plan === "yearly" && (
                   <div className="flex justify-between text-sm">
                     <span className="text-chart-3">Risparmio annuale</span>
-                    <span className="text-chart-3">-€36.00</span>
+                    <span className="text-chart-3">-360 T</span>
                   </div>
                 )}
                 <div className="flex justify-between text-base font-bold pt-2 border-t border-border/30">
                   <span>Totale</span>
-                  <span className="text-primary">{plan === "monthly" ? "€9.99" : "€83.88"}</span>
+                  <span className="text-primary">{plan === "monthly" ? "100 T" : "840 T"}</span>
                 </div>
               </div>
 

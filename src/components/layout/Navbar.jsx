@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, X, LogIn, Rocket } from "lucide-react";
+import { Zap, X, LogIn, Rocket, Coins, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
 import { useState, useRef, useEffect } from "react";
@@ -8,10 +8,21 @@ import { useState, useRef, useEffect } from "react";
 export default function Navbar() {
   const location = useLocation();
   const [showCreatorGate, setShowCreatorGate] = useState(false);
+  const [showTokenMenu, setShowTokenMenu] = useState(false);
   const gateRef = useRef(null);
+  const tokenRef = useRef(null);
+
+  const TOKEN_PACKAGES = [
+    { tokens: 100, price: 10, label: "Starter" },
+    { tokens: 250, price: 24, label: "Popular 🔥" },
+    { tokens: 600, price: 54, label: "Pro" },
+  ];
 
   useEffect(() => {
-    const handler = (e) => { if (gateRef.current && !gateRef.current.contains(e.target)) setShowCreatorGate(false); };
+    const handler = (e) => {
+      if (gateRef.current && !gateRef.current.contains(e.target)) setShowCreatorGate(false);
+      if (tokenRef.current && !tokenRef.current.contains(e.target)) setShowTokenMenu(false);
+    };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
@@ -56,6 +67,50 @@ export default function Navbar() {
         </div>
 
         <div className="hidden md:flex items-center gap-3">
+          {/* Token purchase */}
+          <div className="relative" ref={tokenRef}>
+            <button
+              onClick={() => setShowTokenMenu(v => !v)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-chart-4 bg-chart-4/10 hover:bg-chart-4/20 transition-all border border-chart-4/30"
+            >
+              <Coins className="w-4 h-4" />
+              Acquista Token
+              <ChevronDown className={`w-3 h-3 transition-transform ${showTokenMenu ? "rotate-180" : ""}`} />
+            </button>
+            <AnimatePresence>
+              {showTokenMenu && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 top-11 w-64 bg-card border border-border/50 rounded-2xl p-3 shadow-2xl z-50"
+                >
+                  <p className="text-xs font-semibold text-muted-foreground px-2 mb-2 uppercase tracking-wide">Pacchetti Token</p>
+                  {TOKEN_PACKAGES.map((pkg, i) => (
+                    <Link
+                      key={i}
+                      to="/token-wallet"
+                      onClick={() => setShowTokenMenu(false)}
+                      className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-secondary/60 transition-colors"
+                    >
+                      <div>
+                        <p className="text-sm font-bold">{pkg.tokens} Token</p>
+                        <p className="text-xs text-muted-foreground">{pkg.label}</p>
+                      </div>
+                      <span className="text-sm font-bold text-chart-4">€{pkg.price}</span>
+                    </Link>
+                  ))}
+                  <div className="border-t border-border/20 mt-2 pt-2">
+                    <Link to="/token-wallet" onClick={() => setShowTokenMenu(false)}
+                      className="block text-center text-xs text-primary hover:underline py-1">
+                      Vedi il tuo wallet →
+                    </Link>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
           <Button
             variant="ghost"
             size="sm"
