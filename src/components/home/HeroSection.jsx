@@ -3,6 +3,7 @@ import { ArrowRight, Play, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/lib/LanguageContext";
+import TToken from "@/components/shared/TToken";
 
 export default function HeroSection() {
   const { t } = useLanguage();
@@ -127,7 +128,7 @@ export default function HeroSection() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-lg font-bold text-primary">84.000 T</p>
+                      <p className="text-lg font-bold text-primary">84.000 <TToken /></p>
                       <p className="text-xs text-muted-foreground">questo mese</p>
                     </div>
                   </div>

@@ -6,6 +6,7 @@ import { base44 } from "@/api/base44Client";
 import { useState, useRef, useEffect } from "react";
 import { useLanguage } from "@/lib/LanguageContext";
 import LanguageSwitcher from "@/components/shared/LanguageSwitcher";
+import TToken from "@/components/shared/TToken";
 
 export default function Navbar() {
   const location = useLocation();
@@ -97,7 +98,7 @@ export default function Navbar() {
           {currentUser && (
             <Link to="/token-wallet" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-chart-4 bg-chart-4/10 hover:bg-chart-4/20 transition-all border border-chart-4/30">
               <Coins className="w-4 h-4" />
-              {userWallet ? `${userWallet.balance.toLocaleString()} T` : nav.wallet}
+              {userWallet ? <>{userWallet.balance.toLocaleString()} <TToken /></> : nav.wallet}
             </Link>
           )}
 
