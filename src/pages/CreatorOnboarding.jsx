@@ -78,7 +78,8 @@ export default function CreatorOnboarding() {
   const navigate = useNavigate();
   const [stepIndex, setStepIndex] = useState(0);
   const [saving, setSaving] = useState(false);
-  const [profile, setProfile] = useState({ displayName: "", bio: "", category: "", tags: "" });
+  const [profile, setProfile] = useState({ displayName: "", handle: "", bio: "", category: "", tags: "" });
+  const [handleStatus, setHandleStatus] = useState(null); // null | 'checking' | 'available' | 'taken'
   const [pricing, setPricing] = useState({ monthly: "9.99", yearly: "89.99" });
 
   const step = STEPS[stepIndex].id;
@@ -86,12 +87,24 @@ export default function CreatorOnboarding() {
   const back = () => setStepIndex(i => i - 1);
   const side = SIDE_CONTENT[step] || SIDE_CONTENT.welcome;
 
+  const checkHandle = async (value) => {
+    const clean = value.toLowerCase().replace(/[^a-z0-9._]/g, "");
+    setProfile(p => ({ ...p, handle: clean }));
+    if (!clean || clean.length < 3) { setHandleStatus(null); return; }
+    setHandleStatus("checking");
+    try {
+      const users = await base44.entities.User.filter({ handle: clean });
+      setHandleStatus(users && users.length > 0 ? "taken" : "available");
+    } catch { setHandleStatus(null); }
+  };
+
   const handleFinish = async () => {
     setSaving(true);
     try {
       await base44.auth.updateMe({
         role: "creator",
         display_name: profile.displayName,
+        handle: profile.handle,
         bio: profile.bio,
         category: profile.category,
         tags: profile.tags,
@@ -334,8 +347,27 @@ export default function CreatorOnboarding() {
                 </div>
 
                 <div className="space-y-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Nome pubblico *</Label>
+                 <div className="space-y-1.5">
+                   <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Username *</Label>
+                   <div className="relative">
+                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium">@</span>
+                     <Input
+                       value={profile.handle}
+                       onChange={e => checkHandle(e.target.value)}
+                       placeholder="tuonome"
+                       className={`bg-secondary/30 border-border/30 h-11 text-sm pl-7 ${
+                         handleStatus === 'taken' ? 'border-destructive focus-visible:ring-destructive' :
+                         handleStatus === 'available' ? 'border-chart-3 focus-visible:ring-chart-3' : ''
+                       }`}
+                     />
+                   </div>
+                   {handleStatus === 'checking' && <p className="text-[11px] text-muted-foreground">Controllo disponibilità...</p>}
+                   {handleStatus === 'available' && <p className="text-[11px] text-chart-3">✓ @{profile.handle} è disponibile</p>}
+                   {handleStatus === 'taken' && <p className="text-[11px] text-destructive">✗ @{profile.handle} è già in uso, scegli un altro</p>}
+                 </div>
+
+                 <div className="space-y-1.5">
+                   <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Nome pubblico *</Label>
                     <Input
                       value={profile.displayName}
                       onChange={e => setProfile(p => ({ ...p, displayName: e.target.value }))}
@@ -365,7 +397,7 @@ export default function CreatorOnboarding() {
                   <Button variant="outline" onClick={back} className="h-11 px-5 border-border/50">
                     <ChevronLeft className="w-4 h-4" />
                   </Button>
-                  <Button onClick={next} disabled={!profile.displayName.trim()} className="flex-1 h-11 bg-primary hover:bg-primary/90 glow-primary font-semibold">
+                  <Button onClick={next} disabled={!profile.displayName.trim() || !profile.handle || handleStatus !== 'available'} className="flex-1 h-11 bg-primary hover:bg-primary/90 glow-primary font-semibold">
                     Continua <ChevronRight className="w-4 h-4 ml-1" />
                   </Button>
                 </div>

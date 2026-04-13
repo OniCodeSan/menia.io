@@ -5,27 +5,37 @@
     "role": {
       "type": "string",
       "enum": [
+        "user",
         "admin",
         "creator",
         "fan"
       ],
-      "default": "fan",
-      "description": "User role: admin, creator, or fan"
+      "default": "user"
     },
-    "subscription_plan": {
+    "handle": {
       "type": "string",
-      "enum": [
-        "none",
-        "monthly",
-        "annual"
-      ],
-      "default": "none"
+      "description": "Unique @ username for the creator"
+    },
+    "display_name": {
+      "type": "string"
     },
     "bio": {
       "type": "string"
     },
-    "avatar_url": {
+    "category": {
       "type": "string"
+    },
+    "tags": {
+      "type": "string"
+    },
+    "monthly_price": {
+      "type": "number"
+    },
+    "yearly_price": {
+      "type": "number"
+    },
+    "onboarding_complete": {
+      "type": "boolean"
     }
   }
 }
