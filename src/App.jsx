@@ -54,7 +54,6 @@ const AuthenticatedApp = () => {
       <Route path="/fan-portal" element={<FanPortal />} />
       <Route path="/creator-portal" element={<CreatorPortal />} />
       <Route path="/creator-onboarding" element={<CreatorOnboarding />} />
-      <Route path="/token-wallet" element={<TokenWalletPage />} />
 
       {/* Main app with layout */}
       <Route element={<AppLayout />}>
@@ -65,6 +64,7 @@ const AuthenticatedApp = () => {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/content" element={<ContentPage />} />
         <Route path="/checkout" element={<Checkout />} />
+        <Route path="/token-wallet" element={<TokenWalletPage />} />
         <Route path="/messages" element={<Messages />} />
         <Route path="/live-discover" element={<LiveDiscover />} />
         <Route path="/live" element={<LiveWatch />} />

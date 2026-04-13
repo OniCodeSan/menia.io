@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, X, LogIn, Rocket, Coins, ChevronDown } from "lucide-react";
+import { Zap, X, LogIn, Rocket, Coins, ChevronDown, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
 import { useState, useRef, useEffect } from "react";
@@ -9,6 +9,8 @@ export default function Navbar() {
   const location = useLocation();
   const [showCreatorGate, setShowCreatorGate] = useState(false);
   const [showTokenMenu, setShowTokenMenu] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [userWallet, setUserWallet] = useState(null);
   const gateRef = useRef(null);
   const tokenRef = useRef(null);
 
@@ -17,6 +19,17 @@ export default function Navbar() {
     { tokens: 250, price: 24, label: "Popular 🔥" },
     { tokens: 600, price: 54, label: "Pro" },
   ];
+
+  useEffect(() => {
+    base44.auth.me().then(async (u) => {
+      if (!u) return;
+      setCurrentUser(u);
+      try {
+        const wallets = await base44.entities.TokenWallet.filter({ user_id: u.id, wallet_type: "user" });
+        if (wallets?.[0]) setUserWallet(wallets[0]);
+      } catch {}
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const handler = (e) => {
@@ -67,6 +80,14 @@ export default function Navbar() {
         </div>
 
         <div className="hidden md:flex items-center gap-3">
+          {/* User wallet balance */}
+          {currentUser && (
+            <Link to="/token-wallet" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-chart-4 bg-chart-4/10 hover:bg-chart-4/20 transition-all border border-chart-4/30">
+              <Coins className="w-4 h-4" />
+              {userWallet ? `${userWallet.balance.toLocaleString()} T` : "Wallet"}
+            </Link>
+          )}
+
           {/* Token purchase */}
           <div className="relative" ref={tokenRef}>
             <button
