@@ -47,9 +47,11 @@ export default function Navbar() {
   const navLinks = [
     { label: nav.feed, path: "/feed" },
     { label: nav.explore, path: "/explore" },
-    { label: nav.live, path: "/live-discover" },
-    { label: nav.messages, path: "/messages" },
-    { label: nav.dashboard, path: "/dashboard" },
+    ...(currentUser ? [
+      { label: nav.live, path: "/live-discover" },
+      { label: nav.messages, path: "/messages" },
+      { label: nav.dashboard, path: "/dashboard" },
+    ] : []),
   ];
 
   return (

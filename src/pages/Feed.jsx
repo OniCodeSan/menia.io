@@ -1,12 +1,15 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { Search, Loader2, RefreshCw } from "lucide-react";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Search, Loader2, RefreshCw, Lock, ArrowRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useFeedEngine } from "../hooks/useFeedEngine";
 import FeedTabs from "../components/feed/FeedTabs";
 import SegmentBadge from "../components/feed/SegmentBadge";
 import CreatorFeedCard from "../components/feed/CreatorFeedCard";
+import { base44 } from "@/api/base44Client";
+
+const PREVIEW_LIMIT = 4;
 
 export default function Feed() {
   const {
@@ -19,8 +22,13 @@ export default function Feed() {
   } = useFeedEngine();
 
   const [search, setSearch] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(null);
 
-  const displayed = (currentFeed || []).filter(c => {
+  useEffect(() => {
+    base44.auth.isAuthenticated().then(setIsLoggedIn).catch(() => setIsLoggedIn(false));
+  }, []);
+
+  const allDisplayed = (currentFeed || []).filter(c => {
     if (!search.trim()) return true;
     const q = search.toLowerCase();
     return (
@@ -28,6 +36,10 @@ export default function Feed() {
       (c.tags || []).some(t => t.toLowerCase().includes(q))
     );
   });
+
+  const isLimited = isLoggedIn === false;
+  const displayed = isLimited ? allDisplayed.slice(0, PREVIEW_LIMIT) : allDisplayed;
+  const showLoginWall = isLimited && allDisplayed.length > PREVIEW_LIMIT;
 
   return (
     <div className="min-h-screen">
@@ -85,17 +97,63 @@ export default function Feed() {
             </p>
           </div>
         ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {displayed.map((creator, i) => (
-              <CreatorFeedCard
-                key={creator.id || creator.creator_id}
-                creator={creator}
-                index={i}
-                onView={trackView}
-                onLeave={trackLeave}
-                onClickCreator={trackClick}
-              />
-            ))}
+          <div className="relative">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {displayed.map((creator, i) => (
+                <CreatorFeedCard
+                  key={creator.id || creator.creator_id}
+                  creator={creator}
+                  index={i}
+                  onView={trackView}
+                  onLeave={trackLeave}
+                  onClickCreator={trackClick}
+                />
+              ))}
+            </div>
+
+            {/* Login wall */}
+            <AnimatePresence>
+              {showLoginWall && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="mt-0 relative"
+                >
+                  {/* Fade overlay on last row */}
+                  <div className="absolute -top-32 left-0 right-0 h-32 bg-gradient-to-b from-transparent to-background pointer-events-none" />
+                  
+                  <div className="flex flex-col items-center gap-6 py-16 px-4 text-center">
+                    <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20">
+                      <Lock className="w-7 h-7 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-heading text-2xl font-bold mb-2">Scopri tutti i creator</h3>
+                      <p className="text-muted-foreground text-sm max-w-sm mx-auto">
+                        Accedi gratuitamente per vedere tutti i creator e personalizzare il tuo feed.
+                      </p>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <Button
+                        size="lg"
+                        className="bg-primary hover:bg-primary/90 glow-primary font-semibold px-8"
+                        onClick={() => base44.auth.redirectToLogin('/feed')}
+                      >
+                        Accedi ora
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        className="border-border/50 font-medium px-8"
+                        onClick={() => base44.auth.redirectToLogin('/fan-portal')}
+                      >
+                        Registrati gratis
+                      </Button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         )}
       </div>
