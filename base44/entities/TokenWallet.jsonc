@@ -1,0 +1,42 @@
+{
+  "name": "TokenWallet",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "User ID owner of the wallet"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "wallet_type": {
+      "type": "string",
+      "enum": [
+        "user",
+        "creator"
+      ],
+      "default": "user"
+    },
+    "balance": {
+      "type": "number",
+      "default": 0,
+      "description": "Current token balance"
+    },
+    "total_earned": {
+      "type": "number",
+      "default": 0
+    },
+    "total_spent": {
+      "type": "number",
+      "default": 0
+    },
+    "total_paid_out": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "user_id",
+    "wallet_type"
+  ]
+}

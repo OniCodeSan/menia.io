@@ -22,6 +22,7 @@ import FanDashboard from './pages/FanDashboard';
 import FanPortal from './pages/FanPortal';
 import AdminConsole from './pages/AdminConsole';
 import CreatorOnboarding from './pages/CreatorOnboarding';
+import TokenWalletPage from './pages/TokenWalletPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -53,6 +54,7 @@ const AuthenticatedApp = () => {
       <Route path="/fan-portal" element={<FanPortal />} />
       <Route path="/creator-portal" element={<CreatorPortal />} />
       <Route path="/creator-onboarding" element={<CreatorOnboarding />} />
+      <Route path="/token-wallet" element={<TokenWalletPage />} />
 
       {/* Main app with layout */}
       <Route element={<AppLayout />}>

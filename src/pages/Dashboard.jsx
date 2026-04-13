@@ -15,10 +15,17 @@ import SettingsPanel from "../components/dashboard/SettingsPanel";
 import PublishContent from "../components/dashboard/PublishContent";
 import VerificationPanel from "../components/dashboard/VerificationPanel";
 import SubscriptionManager from "../components/dashboard/SubscriptionManager";
-import { useState } from "react";
+import CreatorWallet from "../components/dashboard/CreatorWallet";
+import { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("overview");
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    base44.auth.me().then(setUser).catch(() => {});
+  }, []);
 
   return (
     <AuthGuard allowedRoles={["creator", "admin"]}>
@@ -50,6 +57,7 @@ export default function Dashboard() {
               { id: "calendar", label: "Calendario" },
               { id: "publish", label: "Pubblica" },
               { id: "verification", label: "Verifica & KYC" },
+              { id: "wallet", label: "Wallet Creator" },
               { id: "settings", label: "Impostazioni" },
             ].map((tab) => (
               <button
@@ -115,6 +123,8 @@ export default function Dashboard() {
           <PublishContent />
         ) : activeTab === "verification" ? (
           <VerificationPanel />
+        ) : activeTab === "wallet" ? (
+          <CreatorWallet user={user} />
         ) : activeTab === "settings" ? (
           <SettingsPanel />
         ) : (
