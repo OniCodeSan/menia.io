@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import AuthGuard from "../components/shared/AuthGuard";
+import UserWallet from "../components/wallet/UserWallet";
+import { base44 } from "@/api/base44Client";
 import { Flame, Star, Users, Play as PlayIcon } from "lucide-react";
 import { Heart, Bell, BellOff, Crown, Play, Radio, MessageCircle, Search, TrendingUp, Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -124,6 +126,11 @@ export default function FanDashboard() {
   const [creators, setCreators] = useState(FAVORITE_CREATORS);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("preferiti");
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    base44.auth.me().then(setCurrentUser).catch(() => {});
+  }, []);
 
   const toggleNotify = (id) => {
     setCreators(prev => prev.map(c => c.id === id ? { ...c, notify: !c.notify } : c));
@@ -159,6 +166,7 @@ export default function FanDashboard() {
               { id: "preferiti", label: "Preferiti" },
               { id: "attivita", label: "Attività recente" },
               { id: "abbonamenti", label: "Abbonamenti" },
+              { id: "wallet", label: "💰 Wallet" },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -356,6 +364,10 @@ export default function FanDashboard() {
           </div>
         )}
 
+        {activeTab === "wallet" && (
+          <UserWallet user={currentUser} />
+        )}
+
         {activeTab === "abbonamenti" && (
           <div className="space-y-4">
             {creators.map((c, i) => (
@@ -375,7 +387,7 @@ export default function FanDashboard() {
                   </span>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-sm font-bold">{c.plan === "Pro" ? "€9.99" : "€4.99"}<span className="text-xs font-normal text-muted-foreground">/mese</span></p>
+                  <p className="text-sm font-bold">{c.plan === "Pro" ? "100 T" : "50 T"}<span className="text-xs font-normal text-muted-foreground">/mese</span></p>
                   <Button size="sm" variant="outline" className="h-7 text-xs border-border/50 mt-1.5">
                     Gestisci
                   </Button>
@@ -385,7 +397,7 @@ export default function FanDashboard() {
 
             <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 text-center">
               <Crown className="w-8 h-8 text-primary mx-auto mb-2" />
-              <p className="text-sm font-semibold mb-1">Totale mensile: €29.96</p>
+              <p className="text-sm font-semibold mb-1">Totale mensile: 300 Token</p>
               <p className="text-xs text-muted-foreground">Prossimo rinnovo il 10 maggio 2026</p>
             </div>
           </div>
