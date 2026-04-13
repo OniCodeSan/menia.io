@@ -90,7 +90,7 @@ function scoreBoost(creator) {
 /**
  * Score finale per un creator dato il profilo utente e i comportamenti
  */
-export function computeScore(creator, userProfile, behaviors) {
+export function computeScore(creator = {}, userProfile = {}, behaviors = []) {
   const scores = {
     interest:   scoreInterest(creator, userProfile),
     behavior:   scoreBehavior(creator, behaviors),
@@ -107,7 +107,7 @@ export function computeScore(creator, userProfile, behaviors) {
 /**
  * Segmenta utente automaticamente dai comportamenti
  */
-export function segmentUser(behaviors, totalSpent) {
+export function segmentUser(behaviors = [], totalSpent = 0) {
   if (totalSpent >= 500) return "whale";
   if (totalSpent >= 100 || behaviors.some(b => b.converted)) return "spender";
   return "lurker";
@@ -116,7 +116,7 @@ export function segmentUser(behaviors, totalSpent) {
 /**
  * Costruisce il feed "For You" — mix pesato + anti-bolla
  */
-export function buildForYouFeed(creators, userProfile, behaviors) {
+export function buildForYouFeed(creators = [], userProfile = {}, behaviors = []) {
   const scored = creators.map(c => ({
     ...c,
     _score: computeScore(c, userProfile, behaviors).total,
@@ -135,7 +135,7 @@ export function buildForYouFeed(creators, userProfile, behaviors) {
 /**
  * Feed High Spenders — chi converte di più globalmente
  */
-export function buildHighSpendersFeed(creators, userProfile, behaviors) {
+export function buildHighSpendersFeed(creators = [], userProfile = {}, behaviors = []) {
   return [...creators]
     .filter(c => (c.global_conversion_rate || 0) > 0.1 || (c.global_avg_spend || 0) > 50)
     .sort((a, b) => {
@@ -148,7 +148,7 @@ export function buildHighSpendersFeed(creators, userProfile, behaviors) {
 /**
  * Feed Discovery — nuovi creator + random
  */
-export function buildDiscoveryFeed(creators, userProfile, behaviors) {
+export function buildDiscoveryFeed(creators = [], userProfile = {}, behaviors = []) {
   const newCreators = creators.filter(c => c.is_new_creator || c.onboarding_boost);
   const others = creators.filter(c => !c.is_new_creator && !c.onboarding_boost)
     .sort(() => Math.random() - 0.5)
@@ -160,7 +160,7 @@ export function buildDiscoveryFeed(creators, userProfile, behaviors) {
 /**
  * Feed Live — ordinato per engagement live
  */
-export function buildLiveFeed(creators) {
+export function buildLiveFeed(creators = []) {
   return creators
     .filter(c => c.is_live)
     .sort((a, b) => (b.live_viewers || 0) - (a.live_viewers || 0));
