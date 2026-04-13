@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Radio, Video, Lock, DollarSign, Users, Zap, ArrowLeft, Settings } from "lucide-react";
+import { Radio, Video, Lock, DollarSign, Zap, ArrowLeft, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Link, useNavigate } from "react-router-dom";
+import { base44 } from "@/api/base44Client";
 
 export default function GoLive() {
+  const [authorized, setAuthorized] = useState(null);
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("Fitness");
   const [subOnly, setSubOnly] = useState(false);
@@ -16,11 +18,33 @@ export default function GoLive() {
   const [isStarting, setIsStarting] = useState(false);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    base44.auth.me().then((u) => {
+      setAuthorized(u?.role === "creator" || u?.role === "admin");
+    }).catch(() => setAuthorized(false));
+  }, []);
+
   const handleStart = () => {
     if (!title.trim()) return;
     setIsStarting(true);
     setTimeout(() => navigate("/live"), 1500);
   };
+
+  if (authorized === null) return null;
+
+  if (!authorized) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 text-center px-4">
+        <div className="w-20 h-20 rounded-2xl bg-destructive/10 flex items-center justify-center">
+          <Lock className="w-10 h-10 text-destructive" />
+        </div>
+        <div>
+          <h2 className="font-heading text-2xl font-bold mb-2">Accesso riservato ai Creator</h2>
+          <p className="text-muted-foreground text-sm max-w-xs">Solo i creator possono avviare una diretta. Diventa creator per accedere a questa funzione.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen py-8">
@@ -48,7 +72,6 @@ export default function GoLive() {
 
           {/* Settings */}
           <div className="space-y-6">
-            {/* Title */}
             <div className="bg-card/50 border border-border/30 rounded-2xl p-5">
               <h3 className="font-heading font-bold text-sm mb-4 flex items-center gap-2">
                 <Settings className="w-4 h-4 text-primary" /> Impostazioni stream
@@ -84,7 +107,6 @@ export default function GoLive() {
               </div>
             </div>
 
-            {/* Monetization */}
             <div className="bg-card/50 border border-border/30 rounded-2xl p-5">
               <h3 className="font-heading font-bold text-sm mb-4 flex items-center gap-2">
                 <DollarSign className="w-4 h-4 text-chart-4" /> Monetizzazione
@@ -109,7 +131,7 @@ export default function GoLive() {
                     animate={{ opacity: 1, height: "auto" }}
                     className="pl-11"
                   >
-                    <Label className="text-xs text-muted-foreground mb-1.5 block">Donazione minima (€)</Label>
+                    <Label className="text-xs text-muted-foreground mb-1.5 block">Donazione minima (Token)</Label>
                     <Input
                       value={minDonation}
                       onChange={(e) => setMinDonation(e.target.value)}

@@ -68,12 +68,7 @@ export default function LiveDiscover() {
               <h1 className="font-heading text-2xl sm:text-3xl font-bold">Live Streaming</h1>
               <p className="text-sm text-muted-foreground mt-1">Guarda i creator in diretta e supportali</p>
             </div>
-            <Link to="/go-live">
-              <Button className="bg-destructive hover:bg-destructive/90 font-semibold">
-                <Radio className="w-4 h-4 mr-2" />
-                Vai in diretta
-              </Button>
-            </Link>
+
           </motion.div>
         </div>
       </div>
