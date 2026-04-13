@@ -100,7 +100,7 @@ export default function HeroSection() {
               <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 to-accent/20 rounded-3xl blur-2xl" />
               <div className="relative rounded-2xl overflow-hidden border border-border/50">
                 <img
-                  src="https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=600&h=700&fit=crop"
+                  src="https://media.base44.com/images/public/69d7e617e5741f4884bb0c49/7ea2309f9_generated_c1ec0316.png"
                   alt="Creator"
                   className="w-full h-[500px] object-cover"
                 />
