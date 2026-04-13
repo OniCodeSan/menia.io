@@ -66,8 +66,8 @@ export default function Navbar() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2 group">
-          <div className="w-9 h-9 rounded-full border-2 border-primary bg-primary/20 flex items-center justify-center glow-primary group-hover:bg-primary/30 transition-all duration-300">
-            <Zap className="w-4 h-4 text-primary" />
+          <div className="w-9 h-9 rounded-full border-2 border-chart-4 bg-chart-4/20 flex items-center justify-center group-hover:bg-chart-4/30 transition-all duration-300">
+            <Zap className="w-4 h-4 text-chart-4" />
           </div>
           <span className="font-heading font-bold text-lg tracking-tight">Tokaro.fans</span>
         </Link>
