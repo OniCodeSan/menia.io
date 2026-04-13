@@ -22,11 +22,11 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-border/30 py-12 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
-              <Zap className="w-4 h-4 text-primary" />
+          <Link to="/" className="flex items-center gap-2 group">
+            <div className="w-8 h-8 rounded-full border-2 border-chart-4 bg-chart-4/20 flex items-center justify-center group-hover:bg-chart-4/30 transition-all duration-300">
+              <Zap className="w-4 h-4 text-chart-4" />
             </div>
-            <span className="font-heading font-bold">Unlockr</span>
+            <span className="font-heading font-bold">Tokaro.fans</span>
           </Link>
           <div className="flex gap-6 text-sm text-muted-foreground">
             <a href="#" className="hover:text-foreground transition-colors">{f.privacy}</a>
