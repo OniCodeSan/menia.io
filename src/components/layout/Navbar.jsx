@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Zap, X, LogIn, Rocket, Coins, ChevronDown, User, Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import TToken from "@/components/shared/TToken";
 
 export default function Navbar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { t } = useLanguage();
   const nav = t.nav;
   const [showCreatorGate, setShowCreatorGate] = useState(false);
@@ -192,7 +193,7 @@ export default function Navbar() {
               variant="ghost"
               size="sm"
               className="text-muted-foreground hover:text-foreground"
-              onClick={() => base44.auth.redirectToLogin('/fan-dashboard')}
+              onClick={() => navigate('/fan-login')}
             >
               {nav.login}
             </Button>
@@ -240,7 +241,7 @@ export default function Navbar() {
                       <div className="space-y-2">
                         <Button
                           className="w-full h-9 bg-primary hover:bg-primary/90 font-semibold text-sm"
-                          onClick={() => { setShowCreatorGate(false); base44.auth.redirectToLogin('/dashboard'); }}
+                          onClick={() => { setShowCreatorGate(false); navigate('/creator-login'); }}
                         >
                           <LogIn className="w-4 h-4 mr-2" />
                           {nav.creatorGate.loginBtn}

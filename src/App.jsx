@@ -26,6 +26,8 @@ import CreatorOnboarding from './pages/CreatorOnboarding';
 import TokenWalletPage from './pages/TokenWalletPage';
 import TermsAndConditions from './pages/TermsAndConditions';
 import Support from './pages/Support';
+import FanLogin from './pages/FanLogin';
+import CreatorLogin from './pages/CreatorLogin';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -56,6 +58,8 @@ const AuthenticatedApp = () => {
       {/* Standalone full-page flows (no Navbar/BottomNav) */}
       <Route path="/fan-portal" element={<FanPortal />} />
       <Route path="/creator-portal" element={<CreatorPortal />} />
+      <Route path="/fan-login" element={<FanLogin />} />
+      <Route path="/creator-login" element={<CreatorLogin />} />
       <Route path="/creator-onboarding" element={<CreatorOnboarding />} />
 
       {/* Main app with layout */}
