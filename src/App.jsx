@@ -25,6 +25,7 @@ import AdminConsole from './pages/AdminConsole';
 import CreatorOnboarding from './pages/CreatorOnboarding';
 import TokenWalletPage from './pages/TokenWalletPage';
 import TermsAndConditions from './pages/TermsAndConditions';
+import Support from './pages/Support';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -73,6 +74,7 @@ const AuthenticatedApp = () => {
         <Route path="/go-live" element={<GoLive />} />
         <Route path="/admin-console" element={<AdminConsole />} />
         <Route path="/terms" element={<TermsAndConditions />} />
+        <Route path="/support" element={<Support />} />
         <Route path="/fan-dashboard" element={<FanDashboard />} />
         <Route path="*" element={<PageNotFound />} />
       </Route>
