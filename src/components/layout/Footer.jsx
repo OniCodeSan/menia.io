@@ -17,7 +17,7 @@ export default function Footer() {
         </Link>
         <div className="flex gap-6 text-sm text-muted-foreground">
           <a href="#" className="hover:text-foreground transition-colors">{f.privacy}</a>
-          <a href="#" className="hover:text-foreground transition-colors">{f.terms}</a>
+          <Link to="/terms" className="hover:text-foreground transition-colors">{f.terms}</Link>
           <a href="#" className="hover:text-foreground transition-colors">{f.support}</a>
         </div>
         <p className="text-xs text-muted-foreground">{f.copyright}</p>

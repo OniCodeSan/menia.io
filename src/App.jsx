@@ -24,6 +24,7 @@ import FanPortal from './pages/FanPortal';
 import AdminConsole from './pages/AdminConsole';
 import CreatorOnboarding from './pages/CreatorOnboarding';
 import TokenWalletPage from './pages/TokenWalletPage';
+import TermsAndConditions from './pages/TermsAndConditions';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -71,6 +72,7 @@ const AuthenticatedApp = () => {
         <Route path="/live" element={<LiveWatch />} />
         <Route path="/go-live" element={<GoLive />} />
         <Route path="/admin-console" element={<AdminConsole />} />
+        <Route path="/terms" element={<TermsAndConditions />} />
         <Route path="/fan-dashboard" element={<FanDashboard />} />
         <Route path="*" element={<PageNotFound />} />
       </Route>
