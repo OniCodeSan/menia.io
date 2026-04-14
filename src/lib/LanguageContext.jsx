@@ -8,19 +8,22 @@ export function LanguageProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function initLang() {
-      // Check localStorage first (user override)
-      const saved = localStorage.getItem("unlockr_lang");
-      if (saved && SUPPORTED_LANGS.includes(saved)) {
-        setLang(saved);
-        setLoading(false);
-        return;
-      }
+    // Check localStorage first (user override) — synchronous, no delay
+    const saved = localStorage.getItem("unlockr_lang");
+    if (saved && SUPPORTED_LANGS.includes(saved)) {
+      setLang(saved);
+      setLoading(false);
+      return;
+    }
 
-      // Try IP-based detection via free API
-      try {
-        const res = await fetch("https://ipapi.co/json/", { signal: AbortSignal.timeout(3000) });
-        const data = await res.json();
+    // Use browser language immediately so the page renders right away
+    setLang(detectLanguage());
+    setLoading(false);
+
+    // Then try IP-based detection in background and update if different
+    fetch("https://ipapi.co/json/", { signal: AbortSignal.timeout(2000) })
+      .then(r => r.json())
+      .then(data => {
         const countryLangMap = {
           IT: "it", FR: "fr", DE: "de", AT: "de", CH: "de",
           ES: "es", MX: "es", AR: "es", CO: "es", CL: "es",
@@ -29,21 +32,9 @@ export function LanguageProvider({ children }) {
           BE: "fr", LU: "fr",
         };
         const detected = countryLangMap[data.country_code];
-        if (detected) {
-          setLang(detected);
-          setLoading(false);
-          return;
-        }
-      } catch {
-        // fallback to browser language
-      }
-
-      // Fallback to browser language
-      setLang(detectLanguage());
-      setLoading(false);
-    }
-
-    initLang();
+        if (detected) setLang(detected);
+      })
+      .catch(() => {});
   }, []);
 
   const changeLanguage = (newLang) => {
