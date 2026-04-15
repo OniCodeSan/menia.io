@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Upload, FileText, Video, ImageIcon, Lock, Globe, Users, CheckCircle2, Loader2 } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { storageService } from "@/lib/storage";
 import MediaUploader from "./MediaUploader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,7 +40,7 @@ export default function PublishContent() {
     setPublishing(true);
     try {
       if (fileReady) {
-        await base44.integrations.Core.UploadFile({ file: fileReady });
+        await storageService.upload(fileReady, { folder: contentType });
       }
       setPublishing(false);
       setPublished(true);

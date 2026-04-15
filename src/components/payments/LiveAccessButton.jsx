@@ -1,48 +1,50 @@
 import { useState } from "react";
-import { Radio, Loader2 } from "lucide-react";
+import { Radio, Loader2, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { base44 } from "@/api/base44Client";
+import { walletService } from "@/lib/wallet";
+import { useAuth } from "@/lib/AuthContext";
 
-// price_1TLW1hKGgg4giFxcx3aZkaZM = Accesso Live €2.99
-const LIVE_PRICE_ID = "price_1TLW1hKGgg4giFxcx3aZkaZM";
+const DEFAULT_PRICE = 30;
 
-export default function LiveAccessButton({ creatorName, className = "" }) {
+export default function LiveAccessButton({ creatorName, liveId, price = DEFAULT_PRICE, onGranted, className = "" }) {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [granted, setGranted] = useState(false);
+  const [error, setError] = useState("");
 
   const handleBuy = async () => {
-    if (window.self !== window.top) {
-      alert("I pagamenti funzionano solo dall'app pubblicata, non dall'anteprima.");
-      return;
-    }
+    if (!user) { setError("Devi accedere per entrare nella live"); return; }
+    if (!liveId) { setError("Live non valida"); return; }
+    setError("");
     setLoading(true);
     try {
-      const res = await base44.functions.invoke("stripeCheckout", {
-        type: "live_access",
-        priceId: LIVE_PRICE_ID,
-        creatorName,
-        successUrl: window.location.origin + window.location.pathname + "?live=success",
-        cancelUrl: window.location.href,
-      });
-      if (res.data?.url) window.location.href = res.data.url;
+      await walletService.purchaseLiveAccess(user.id, liveId, price, `Accesso live di ${creatorName}`);
+      setGranted(true);
+      onGranted?.();
     } catch (e) {
-      console.error(e);
+      setError(/** @type {any} */ (e)?.message || "Errore durante l'acquisto");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Button
-      onClick={handleBuy}
-      disabled={loading}
-      className={`bg-destructive hover:bg-destructive/90 font-semibold ${className}`}
-    >
-      {loading ? (
-        <Loader2 className="w-4 h-4 animate-spin mr-2" />
-      ) : (
-        <Radio className="w-4 h-4 mr-2" />
-      )}
-      Accedi alla Live — €2,99
-    </Button>
+    <div className="flex flex-col gap-1">
+      <Button
+        onClick={handleBuy}
+        disabled={loading || granted}
+        className={`bg-destructive hover:bg-destructive/90 font-semibold ${className}`}
+      >
+        {loading ? (
+          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+        ) : granted ? (
+          <CheckCircle2 className="w-4 h-4 mr-2" />
+        ) : (
+          <Radio className="w-4 h-4 mr-2" />
+        )}
+        {granted ? "Accesso attivo" : `Accedi alla Live — ${price} T`}
+      </Button>
+      {error && <p className="text-xs text-destructive">{error}</p>}
+    </div>
   );
 }

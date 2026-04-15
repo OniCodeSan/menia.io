@@ -1,9 +1,10 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, X, LogIn, Rocket, Coins, ChevronDown, User, Settings, LogOut } from "lucide-react";
+import { X, LogIn, Rocket, Coins, ChevronDown, User, Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { base44 } from "@/api/base44Client";
+import { walletService } from "@/lib/wallet";
 import { useState, useRef, useEffect } from "react";
+import { useAuth } from "@/lib/AuthContext";
 import { useLanguage } from "@/lib/LanguageContext";
 import LanguageSwitcher from "@/components/shared/LanguageSwitcher";
 import TToken from "@/components/shared/TToken";
@@ -12,11 +13,11 @@ export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const { user: currentUser, logout } = useAuth();
   const nav = t.nav;
   const [showCreatorGate, setShowCreatorGate] = useState(false);
   const [showTokenMenu, setShowTokenMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
   const [userWallet, setUserWallet] = useState(null);
   const gateRef = useRef(null);
   const tokenRef = useRef(null);
@@ -30,15 +31,16 @@ export default function Navbar() {
   ];
 
   useEffect(() => {
-    base44.auth.me().then(async (u) => {
-      if (!u) return;
-      setCurrentUser(u);
-      try {
-        const wallets = await base44.entities.TokenWallet.filter({ user_id: u.id, wallet_type: "user" });
-        if (wallets?.[0]) setUserWallet(wallets[0]);
-      } catch {}
-    }).catch(() => {});
-  }, []);
+    let cancelled = false;
+    if (!currentUser) {
+      setUserWallet(null);
+      return;
+    }
+    walletService.getUserWallet(currentUser.id).then((w) => {
+      if (!cancelled) setUserWallet(w);
+    });
+    return () => { cancelled = true; };
+  }, [currentUser]);
 
   useEffect(() => {
     const handler = (e) => {
@@ -68,9 +70,11 @@ export default function Navbar() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2 group">
-          <div className="w-9 h-9 rounded-full border-2 border-chart-4 bg-chart-4/20 flex items-center justify-center group-hover:bg-chart-4/30 transition-all duration-300">
-            <Zap className="w-4 h-4 text-chart-4" />
-          </div>
+          <img
+            src="/tokaro-logo.png"
+            alt="Tokaro.fans"
+            className="w-9 h-9 rounded-full group-hover:scale-105 transition-transform duration-300"
+          />
           <span className="font-heading font-bold text-lg tracking-tight">Tokaro.fans</span>
         </Link>
 
@@ -178,7 +182,7 @@ export default function Navbar() {
                       Impostazioni
                     </Link>
                     <button
-                      onClick={() => base44.auth.logout('/')}
+                      onClick={() => { logout(); setShowUserMenu(false); navigate('/'); }}
                       className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-destructive/10 transition-colors text-sm text-destructive"
                     >
                       <LogOut className="w-4 h-4" />
@@ -246,7 +250,7 @@ export default function Navbar() {
                           <LogIn className="w-4 h-4 mr-2" />
                           {nav.creatorGate.loginBtn}
                         </Button>
-                        <Link to="/creator-onboarding" onClick={() => setShowCreatorGate(false)}>
+                        <Link to="/creator-login?mode=register" onClick={() => setShowCreatorGate(false)}>
                           <Button variant="outline" className="w-full h-9 border-border/50 text-sm font-semibold">
                             <Rocket className="w-4 h-4 mr-2" />
                             {nav.creatorGate.registerBtn}

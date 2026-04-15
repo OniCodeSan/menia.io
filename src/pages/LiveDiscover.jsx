@@ -1,8 +1,6 @@
 import { motion } from "framer-motion";
-import { Radio, TrendingUp, Zap } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Radio, TrendingUp } from "lucide-react";
 import LiveCard from "../components/live/LiveCard";
-import { Link } from "react-router-dom";
 
 const LIVE_STREAMS = [
   {

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Radio, Zap, TrendingUp, Star } from "lucide-react";
+import { Radio, Zap, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const AVATARS = [

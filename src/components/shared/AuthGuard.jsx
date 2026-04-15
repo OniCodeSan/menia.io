@@ -1,29 +1,14 @@
-import { useEffect, useState } from "react";
-import { base44 } from "@/api/base44Client";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "@/lib/AuthContext";
 
-export default function AuthGuard({ children, allowedRoles }) {
-  const [status, setStatus] = useState("loading"); // loading | ok | unauthorized | forbidden
-  const [userRole, setUserRole] = useState(null);
+export default function AuthGuard({ children, allowedRoles = undefined }) {
+  const { user, isLoadingAuth } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  useEffect(() => {
-    base44.auth.me().then((user) => {
-      if (!user) {
-        setStatus("unauthorized");
-        return;
-      }
-      setUserRole(user.role);
-      if (allowedRoles && !allowedRoles.includes(user.role)) {
-        setStatus("forbidden");
-        return;
-      }
-      setStatus("ok");
-    }).catch(() => setStatus("unauthorized"));
-  }, []);
-
-  if (status === "loading") {
+  if (isLoadingAuth) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -31,7 +16,10 @@ export default function AuthGuard({ children, allowedRoles }) {
     );
   }
 
-  if (status === "unauthorized") {
+  if (!user) {
+    const target = allowedRoles?.includes("creator") || allowedRoles?.includes("admin")
+      ? "/creator-login"
+      : "/fan-login";
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 px-4 text-center">
         <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center">
@@ -45,7 +33,7 @@ export default function AuthGuard({ children, allowedRoles }) {
         </div>
         <Button
           className="bg-primary hover:bg-primary/90 glow-primary"
-          onClick={() => base44.auth.redirectToLogin(window.location.pathname)}
+          onClick={() => navigate(target, { state: { from: location.pathname } })}
         >
           Accedi ora
         </Button>
@@ -53,11 +41,12 @@ export default function AuthGuard({ children, allowedRoles }) {
     );
   }
 
-  if (status === "forbidden") {
-    // Creator trying to access fan area
-    const isCreatorInFanArea = (userRole === 'creator' || userRole === 'admin') && allowedRoles?.includes('user');
-    // Fan trying to access creator area
-    const isFanInCreatorArea = (userRole === 'user' || userRole === 'fan') && allowedRoles?.includes('creator');
+  const userRole = user.role;
+  const isAllowed = !allowedRoles || allowedRoles.includes(userRole);
+
+  if (!isAllowed) {
+    const isCreatorInFanArea = (userRole === "creator" || userRole === "admin") && (allowedRoles?.includes("fan") || allowedRoles?.includes("user"));
+    const isFanInCreatorArea = (userRole === "fan" || userRole === "user") && allowedRoles?.includes("creator");
 
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 px-4 text-center">

@@ -1,8 +1,11 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Coins, Plus, ArrowDownLeft, ArrowUpRight, Loader2, Zap } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { Coins, Plus, ArrowDownLeft, ArrowUpRight, Loader2, Zap, CreditCard, CheckCircle2, Lock } from "lucide-react";
+import { walletService } from "@/lib/wallet";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 const PACKAGES = [
   { tokens: 100, price: 10, label: "Starter", popular: false },
@@ -29,11 +32,17 @@ function TransactionRow({ tx }) {
   );
 }
 
+const emptyCard = { name: "", number: "", expiry: "", cvc: "" };
+
 export default function UserWallet({ user }) {
   const [wallet, setWallet] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [purchasing, setPurchasing] = useState(null);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [selectedPkg, setSelectedPkg] = useState(null);
+  const [paymentStep, setPaymentStep] = useState("form");
+  const [card, setCard] = useState(emptyCard);
+  const [paymentError, setPaymentError] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -46,30 +55,78 @@ export default function UserWallet({ user }) {
 
   const loadData = async () => {
     try {
-      const [wallets, txs] = await Promise.all([
-        base44.entities.TokenWallet.filter({ user_id: user.id, wallet_type: "user" }),
-        base44.entities.TokenTransaction.filter({ user_id: user.id, wallet_type: "user" }),
+      const [w, txs] = await Promise.all([
+        walletService.getUserWallet(user.id),
+        walletService.listTransactions(user.id),
       ]);
-      setWallet(wallets?.[0] || null);
-      setTransactions((txs || []).sort((a, b) => new Date(b.created_date) - new Date(a.created_date)));
+      setWallet(w);
+      setTransactions(txs || []);
+    } catch (e) {
+      console.warn("[wallet] loadData", e.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleBuy = async (pkgIndex) => {
-    if (window.self !== window.top) {
-      alert("Il pagamento è disponibile solo nell'app pubblicata.");
+  const openCheckout = (pkgIndex) => {
+    setSelectedPkg(PACKAGES[pkgIndex]);
+    setCard(emptyCard);
+    setPaymentError("");
+    setPaymentStep("form");
+    setCheckoutOpen(true);
+  };
+
+  const closeCheckout = () => {
+    if (paymentStep === "processing") return;
+    setCheckoutOpen(false);
+    setTimeout(() => {
+      setSelectedPkg(null);
+      setCard(emptyCard);
+      setPaymentError("");
+      setPaymentStep("form");
+    }, 200);
+  };
+
+  const formatCardNumber = (v) =>
+    v.replace(/\D/g, "").slice(0, 16).replace(/(.{4})/g, "$1 ").trim();
+
+  const formatExpiry = (v) => {
+    const digits = v.replace(/\D/g, "").slice(0, 4);
+    if (digits.length < 3) return digits;
+    return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  };
+
+  const validateCard = () => {
+    if (!card.name.trim()) return "Inserisci il nome del titolare";
+    const digits = card.number.replace(/\s/g, "");
+    if (digits.length < 13 || digits.length > 16) return "Numero carta non valido";
+    if (!/^\d{2}\/\d{2}$/.test(card.expiry)) return "Scadenza non valida (MM/AA)";
+    const [mm, yy] = card.expiry.split("/").map((n) => parseInt(n, 10));
+    if (mm < 1 || mm > 12) return "Mese scadenza non valido";
+    const now = new Date();
+    const exp = new Date(2000 + yy, mm - 1, 1);
+    if (exp < new Date(now.getFullYear(), now.getMonth(), 1)) return "Carta scaduta";
+    if (!/^\d{3,4}$/.test(card.cvc)) return "CVC non valido";
+    return null;
+  };
+
+  const handleConfirmPayment = async () => {
+    const err = validateCard();
+    if (err) {
+      setPaymentError(err);
       return;
     }
-    setPurchasing(pkgIndex);
+    setPaymentError("");
+    setPaymentStep("processing");
     try {
-      const res = await base44.functions.invoke("tokenCheckout", { package_index: pkgIndex });
-      window.location.href = res.data.url;
+      await new Promise((r) => setTimeout(r, 1200));
+      await walletService.topUp(user.id, selectedPkg.tokens, `Acquisto ${selectedPkg.label}`);
+      await loadData();
+      setPaymentStep("success");
+      setTimeout(() => closeCheckout(), 1800);
     } catch (e) {
-      alert("Errore durante il pagamento: " + e.message);
-    } finally {
-      setPurchasing(null);
+      setPaymentError(e.message || "Errore durante il pagamento");
+      setPaymentStep("form");
     }
   };
 
@@ -122,12 +179,11 @@ export default function UserWallet({ user }) {
                 <p className="font-heading font-bold text-xl">€{pkg.price}</p>
                 <Button
                   size="sm"
-                  onClick={() => handleBuy(i)}
-                  disabled={purchasing !== null}
+                  onClick={() => openCheckout(i)}
                   className={pkg.popular ? "bg-primary hover:bg-primary/90 glow-primary" : ""}
                   variant={pkg.popular ? "default" : "outline"}
                 >
-                  {purchasing === i ? <Loader2 className="w-4 h-4 animate-spin" /> : "Acquista"}
+                  Acquista
                 </Button>
               </div>
             </div>
@@ -146,6 +202,117 @@ export default function UserWallet({ user }) {
           <div>{transactions.slice(0, 20).map((tx) => <TransactionRow key={tx.id} tx={tx} />)}</div>
         )}
       </motion.div>
+
+      <Dialog open={checkoutOpen} onOpenChange={(v) => (v ? setCheckoutOpen(true) : closeCheckout())}>
+        <DialogContent className="sm:max-w-md">
+          {paymentStep === "success" ? (
+            <div className="py-6 flex flex-col items-center text-center gap-3">
+              <div className="w-16 h-16 rounded-full bg-chart-3/15 flex items-center justify-center">
+                <CheckCircle2 className="w-8 h-8 text-chart-3" />
+              </div>
+              <DialogTitle className="font-heading">Pagamento completato</DialogTitle>
+              <DialogDescription>
+                {selectedPkg?.tokens} Token sono stati aggiunti al tuo saldo.
+              </DialogDescription>
+            </div>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle className="font-heading flex items-center gap-2">
+                  <CreditCard className="w-5 h-5 text-primary" />
+                  Completa l'acquisto
+                </DialogTitle>
+                <DialogDescription>
+                  Inserisci i dati della carta per confermare il pagamento.
+                </DialogDescription>
+              </DialogHeader>
+
+              {selectedPkg && (
+                <div className="flex items-center justify-between p-4 rounded-xl border border-primary/30 bg-primary/5">
+                  <div>
+                    <p className="font-bold text-lg">{selectedPkg.tokens} Token</p>
+                    <p className="text-xs text-muted-foreground">{selectedPkg.label}</p>
+                  </div>
+                  <p className="font-heading font-bold text-2xl">€{selectedPkg.price}</p>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="cc-name">Nome titolare</Label>
+                  <Input
+                    id="cc-name"
+                    placeholder="Mario Rossi"
+                    value={card.name}
+                    disabled={paymentStep === "processing"}
+                    onChange={(e) => setCard((c) => ({ ...c, name: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="cc-number">Numero carta</Label>
+                  <Input
+                    id="cc-number"
+                    placeholder="4242 4242 4242 4242"
+                    inputMode="numeric"
+                    value={card.number}
+                    disabled={paymentStep === "processing"}
+                    onChange={(e) => setCard((c) => ({ ...c, number: formatCardNumber(e.target.value) }))}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="cc-exp">Scadenza</Label>
+                    <Input
+                      id="cc-exp"
+                      placeholder="MM/AA"
+                      inputMode="numeric"
+                      value={card.expiry}
+                      disabled={paymentStep === "processing"}
+                      onChange={(e) => setCard((c) => ({ ...c, expiry: formatExpiry(e.target.value) }))}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="cc-cvc">CVC</Label>
+                    <Input
+                      id="cc-cvc"
+                      placeholder="123"
+                      inputMode="numeric"
+                      maxLength={4}
+                      value={card.cvc}
+                      disabled={paymentStep === "processing"}
+                      onChange={(e) => setCard((c) => ({ ...c, cvc: e.target.value.replace(/\D/g, "").slice(0, 4) }))}
+                    />
+                  </div>
+                </div>
+                {paymentError && (
+                  <p className="text-xs text-destructive">{paymentError}</p>
+                )}
+                <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                  <Lock className="w-3 h-3" />
+                  Pagamento simulato in ambiente di test — nessun addebito reale.
+                </p>
+              </div>
+
+              <DialogFooter className="gap-2">
+                <Button variant="outline" onClick={closeCheckout} disabled={paymentStep === "processing"}>
+                  Annulla
+                </Button>
+                <Button
+                  onClick={handleConfirmPayment}
+                  disabled={paymentStep === "processing"}
+                  className="bg-primary hover:bg-primary/90 glow-primary"
+                >
+                  {paymentStep === "processing" ? (
+                    <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Elaborazione...</>
+                  ) : (
+                    <>Paga €{selectedPkg?.price}</>
+                  )}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

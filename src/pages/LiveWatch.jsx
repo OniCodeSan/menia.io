@@ -1,12 +1,17 @@
-import { useState, useCallback, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Users, Zap, Radio, Crown, Share2, Heart, ArrowLeft, Play, Volume2, VolumeX, Maximize2 } from "lucide-react";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Users, Zap, Radio, Share2, Heart, ArrowLeft, Play, Volume2, VolumeX, Maximize2, Loader2 } from "lucide-react";
 import LiveAccessButton from "../components/payments/LiveAccessButton";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import LiveChat from "../components/live/LiveChat";
 import DonationPanel from "../components/live/DonationPanel";
 import DonationAlert from "../components/live/DonationAlert";
+import { walletService } from "@/lib/wallet";
+import { useAuth } from "@/lib/AuthContext";
+
+const LIVE_ID = "demo-sara-rossi";
+const LIVE_PRICE = 30;
 
 function VideoPlayer() {
   const videoRef = useRef(null);
@@ -67,12 +72,25 @@ function VideoPlayer() {
 }
 
 export default function LiveWatch() {
+  const { user } = useAuth();
   const [viewers] = useState(1247);
   const [totalDonations] = useState(340);
   const [liked, setLiked] = useState(false);
   const [hasAccess, setHasAccess] = useState(false);
+  const [checkingAccess, setCheckingAccess] = useState(true);
   const [currentDonation, setCurrentDonation] = useState(null);
   const [showSidePanel, setShowSidePanel] = useState("chat");
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!user) { setHasAccess(false); setCheckingAccess(false); return; }
+    setCheckingAccess(true);
+    walletService.hasLiveAccess(user.id, LIVE_ID)
+      .then((ok) => { if (!cancelled) setHasAccess(!!ok); })
+      .catch(() => { if (!cancelled) setHasAccess(false); })
+      .finally(() => { if (!cancelled) setCheckingAccess(false); });
+    return () => { cancelled = true; };
+  }, [user]);
 
   const handleNewDonation = useCallback((donation) => {
     setCurrentDonation(donation);
@@ -89,7 +107,12 @@ export default function LiveWatch() {
         </Link>
 
         {/* Live access gate */}
-        {!hasAccess && (
+        {checkingAccess ? (
+          <div className="mb-4 bg-card/60 border border-border/30 rounded-2xl p-5 flex items-center gap-3 text-sm text-muted-foreground">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Verifico l'accesso alla live…
+          </div>
+        ) : !hasAccess ? (
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -100,11 +123,15 @@ export default function LiveWatch() {
               <p className="text-xs text-muted-foreground">Acquista il biglietto singolo per guardare questa live in diretta.</p>
             </div>
             <div className="flex items-center gap-3 shrink-0">
-              <LiveAccessButton creatorName="Sara Rossi" />
-              <button onClick={() => setHasAccess(true)} className="text-xs text-muted-foreground underline">Già abbonato? Accedi</button>
+              <LiveAccessButton
+                creatorName="Sara Rossi"
+                liveId={LIVE_ID}
+                price={LIVE_PRICE}
+                onGranted={() => setHasAccess(true)}
+              />
             </div>
           </motion.div>
-        )}
+        ) : null}
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Main stream area */}
@@ -199,7 +226,7 @@ export default function LiveWatch() {
                 {showSidePanel === "chat" ? (
                   <LiveChat onNewDonation={handleNewDonation} />
                 ) : (
-                  <DonationPanel creatorName="Sara Rossi" isSubscribed={false} />
+                  <DonationPanel creatorName="Sara Rossi" isSubscribed={false} onDonated={handleNewDonation} />
                 )}
               </div>
             </div>
@@ -223,7 +250,7 @@ export default function LiveWatch() {
               <div className="px-4 py-3 border-b border-border/30">
                 <span className="font-heading font-bold text-sm">Supporta il creator</span>
               </div>
-              <DonationPanel creatorName="Sara Rossi" isSubscribed={false} />
+              <DonationPanel creatorName="Sara Rossi" isSubscribed={false} onDonated={handleNewDonation} />
             </div>
           </div>
         </div>

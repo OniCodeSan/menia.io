@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
 import { Crown, Zap, BarChart2, Users, ArrowRight, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const FEATURES = [
   { icon: BarChart2, label: "Analytics avanzate", color: "text-primary" },
@@ -13,28 +13,27 @@ const FEATURES = [
 ];
 
 export default function CreatorPortal() {
+  const navigate = useNavigate();
+  const { user, logout, isLoadingAuth } = useAuth();
   const [checking, setChecking] = useState(true);
-  const [user, setUser] = useState(null);
   const [accessDenied, setAccessDenied] = useState(false);
 
   useEffect(() => {
-    base44.auth.me()
-      .then((u) => {
-        setUser(u);
-        if (u.role === "creator" || u.role === "admin") {
-          window.location.href = "/dashboard";
-        } else {
-          setAccessDenied(true);
-          setChecking(false);
-        }
-      })
-      .catch(() => {
-        setChecking(false);
-      });
-  }, []);
+    if (isLoadingAuth) return;
+    if (!user) {
+      setChecking(false);
+      return;
+    }
+    if (user.role === "creator" || user.role === "admin") {
+      navigate("/dashboard", { replace: true });
+    } else {
+      setAccessDenied(true);
+      setChecking(false);
+    }
+  }, [user, isLoadingAuth, navigate]);
 
   const handleLogin = () => {
-    base44.auth.redirectToLogin("/creator-portal");
+    navigate("/creator-login");
   };
 
   if (checking && !accessDenied) {
@@ -83,7 +82,7 @@ export default function CreatorPortal() {
                   Il tuo account non ha i permessi di creator. Contatta il supporto o registrati come creator.
                 </p>
               </div>
-              <Button variant="outline" className="w-full border-border/50" onClick={() => { base44.auth.logout(); }}>
+              <Button variant="outline" className="w-full border-border/50" onClick={() => { logout(); navigate('/creator-login'); }}>
                 Esci e cambia account
               </Button>
             </div>

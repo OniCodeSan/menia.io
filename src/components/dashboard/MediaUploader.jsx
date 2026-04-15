@@ -3,8 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Upload, X, ImageIcon, Video, FileText, Loader2, CheckCircle2, AlertTriangle, Sliders } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
 const MAX_IMAGE_MB = 5;
 const MAX_VIDEO_MB = 200;

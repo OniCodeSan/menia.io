@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { base44 } from "@/api/base44Client";
+import { feedData } from "@/lib/feedData";
 import {
   buildForYouFeed,
   buildHighSpendersFeed,
@@ -23,7 +23,8 @@ export function useFeedEngine() {
 
   const getUser = async () => {
     if (cachedUser.current !== undefined) return cachedUser.current;
-    const u = await base44.auth.me().catch(() => null);
+    const { authService } = await import("@/lib/auth");
+    const u = await authService.me();
     cachedUser.current = u;
     return u;
   };
@@ -32,24 +33,20 @@ export function useFeedEngine() {
     setLoading(true);
     try {
       const user = await getUser();
-      const creators = (await base44.entities.CreatorScore.list("-global_conversion_rate", 100)) || [];
+      const creators = (await feedData.listCreatorScores(100)) || [];
 
       let profile = { declared_interests: [], implicit_interests: [], segment: "lurker", total_spent_tokens: 0 };
       let behaviors = [];
 
       if (user) {
-        const profiles = await base44.entities.UserProfile.filter({ user_id: user.id });
-        if (profiles?.[0]) {
-          profile = profiles[0];
-        } else {
-          profile = await base44.entities.UserProfile.create({ user_id: user.id, user_email: user.email });
-        }
+        const remote = await feedData.getUserProfile(user.id, user.email);
+        if (remote) profile = { ...profile, ...remote };
 
-        behaviors = await base44.entities.ContentBehavior.filter({ user_id: user.id });
+        behaviors = await feedData.listBehaviors(user.id);
 
         const seg = segmentUser(behaviors, profile.total_spent_tokens || 0);
-        if (seg !== profile.segment) {
-          await base44.entities.UserProfile.update(profile.id, { segment: seg });
+        if (seg !== profile.segment && profile.id) {
+          await feedData.updateUserProfile(profile.id, { segment: seg });
           profile = { ...profile, segment: seg };
         }
         setUserSegment(seg);
@@ -84,23 +81,14 @@ export function useFeedEngine() {
       const user = await getUser();
       if (!user) return;
 
-      const existing = await base44.entities.ContentBehavior.filter({ user_id: user.id, creator_id: creatorId });
-      if (existing?.[0]) {
-        await base44.entities.ContentBehavior.update(existing[0].id, {
-          view_time_seconds: (existing[0].view_time_seconds || 0) + seconds,
-          scroll_depth: Math.max(existing[0].scroll_depth || 0, scrollDepth),
-          return_visits: (existing[0].return_visits || 0) + 1,
-        });
-      } else {
-        await base44.entities.ContentBehavior.create({
-          user_id: user.id,
-          creator_id: creatorId,
-          view_time_seconds: seconds,
-          scroll_depth: scrollDepth,
-          return_visits: 1,
-          session_date: new Date().toISOString(),
-        });
-      }
+      const behaviors = await feedData.listBehaviors(user.id);
+      const existing = behaviors.find((b) => b.creator_id === creatorId);
+      await feedData.upsertBehavior(user.id, creatorId, {
+        view_time_seconds: (existing?.view_time_seconds || 0) + seconds,
+        scroll_depth: Math.max(existing?.scroll_depth || 0, scrollDepth),
+        return_visits: (existing?.return_visits || 0) + 1,
+        session_date: new Date().toISOString(),
+      });
     } catch {
       // silently ignore tracking errors
     }
@@ -110,12 +98,11 @@ export function useFeedEngine() {
     try {
       const user = await getUser();
       if (!user) return;
-      const existing = await base44.entities.ContentBehavior.filter({ user_id: user.id, creator_id: creatorId });
-      if (existing?.[0]) {
-        await base44.entities.ContentBehavior.update(existing[0].id, {
-          profile_clicks: (existing[0].profile_clicks || 0) + 1,
-        });
-      }
+      const behaviors = await feedData.listBehaviors(user.id);
+      const existing = behaviors.find((b) => b.creator_id === creatorId);
+      await feedData.upsertBehavior(user.id, creatorId, {
+        profile_clicks: (existing?.profile_clicks || 0) + 1,
+      });
     } catch {
       // silently ignore tracking errors
     }

@@ -1,20 +1,14 @@
-import { useState, useEffect } from "react";
 import { Coins, Loader2 } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import UserWallet from "../components/wallet/UserWallet";
 
 export default function TokenWalletPage() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const { user, isLoadingAuth } = useAuth();
 
-  useEffect(() => {
-    base44.auth.me().then((u) => {
-      setUser(u || null);
-    }).catch(() => {}).finally(() => setLoading(false));
-  }, []);
-
-  if (loading) {
+  if (isLoadingAuth) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -32,7 +26,7 @@ export default function TokenWalletPage() {
           <h2 className="font-heading text-2xl font-bold mb-2">Il tuo Wallet Token</h2>
           <p className="text-muted-foreground text-sm">Accedi per gestire i tuoi token</p>
         </div>
-        <Button className="bg-primary hover:bg-primary/90" onClick={() => base44.auth.redirectToLogin("/fan-dashboard?tab=wallet")}>
+        <Button className="bg-primary hover:bg-primary/90" onClick={() => navigate("/fan-login")}>
           Accedi
         </Button>
       </div>

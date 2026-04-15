@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
-  Users, Crown, Heart, DollarSign, TrendingUp, Radio,
-  MessageCircle, ShieldCheck, LogOut, Eye, AlertTriangle,
-  Activity, FileText, Zap, Lock, User
+  Users, Crown, Heart, DollarSign, Radio,
+  MessageCircle, ShieldCheck, LogOut, AlertTriangle,
+  Activity, Zap, Lock, User
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

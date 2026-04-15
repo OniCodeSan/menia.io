@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Coins, TrendingUp, ArrowUpRight, Loader2, CheckCircle, AlertCircle } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { walletService } from "@/lib/wallet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,14 +43,14 @@ export default function CreatorWallet({ user }) {
 
   const loadData = async () => {
     try {
-      const [wallets, txs, payouts] = await Promise.all([
-        base44.entities.TokenWallet.filter({ user_id: user.id, wallet_type: "creator" }),
-        base44.entities.TokenTransaction.filter({ user_id: user.id, wallet_type: "creator" }),
-        base44.entities.PayoutRequest.filter({ creator_id: user.id }),
+      const [w, txs, payouts] = await Promise.all([
+        walletService.getCreatorWallet(user.id),
+        walletService.listTransactions(user.id, "creator"),
+        walletService.listPayouts(user.id),
       ]);
-      setWallet(wallets?.[0] || null);
-      setTransactions((txs || []).sort((a, b) => new Date(b.created_date) - new Date(a.created_date)));
-      setPayoutRequests((payouts || []).sort((a, b) => new Date(b.created_date) - new Date(a.created_date)));
+      setWallet(w);
+      setTransactions(txs || []);
+      setPayoutRequests(payouts || []);
     } finally {
       setLoading(false);
     }
@@ -62,12 +62,12 @@ export default function CreatorWallet({ user }) {
     setRequesting(true);
     setPayoutResult(null);
     try {
-      const res = await base44.functions.invoke("requestPayout", { token_amount: tokens });
-      setPayoutResult({ success: true, euro: res.data.euro_amount });
+      const res = await walletService.requestPayout(user.id, tokens);
+      setPayoutResult({ success: true, euro: res.euro_amount });
       setPayoutAmount("");
       await loadData();
     } catch (e) {
-      setPayoutResult({ success: false, error: e.response?.data?.error || e.message });
+      setPayoutResult({ success: false, error: e.message });
     } finally {
       setRequesting(false);
     }
@@ -78,7 +78,7 @@ export default function CreatorWallet({ user }) {
   const balance = wallet?.balance || 0;
   const euroValue = parseFloat((balance * PAYOUT_RATE).toFixed(2));
   const minTokensForPayout = Math.ceil(MIN_PAYOUT_EUR / PAYOUT_RATE);
-  const estimatedEuro = payoutAmount ? parseFloat((parseInt(payoutAmount || 0) * PAYOUT_RATE).toFixed(2)) : 0;
+  const estimatedEuro = payoutAmount ? parseFloat((parseInt(payoutAmount, 10) * PAYOUT_RATE).toFixed(2)) : 0;
 
   const statusColors = { pending: "text-chart-4", approved: "text-chart-3", paid: "text-chart-3", rejected: "text-destructive" };
 
@@ -107,7 +107,7 @@ export default function CreatorWallet({ user }) {
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Totale pagato</p>
-            <p className="font-bold">{wallet?.total_paid_out || 0} T</p>
+            <p className="font-bold">{wallet?.total_spent || 0} T</p>
           </div>
         </div>
       </motion.div>
@@ -156,7 +156,7 @@ export default function CreatorWallet({ user }) {
               <div key={p.id} className="flex items-center justify-between py-2 border-b border-border/20 last:border-0">
                 <div>
                   <p className="text-sm font-medium">{p.token_amount} Token → €{p.euro_amount}</p>
-                  <p className="text-xs text-muted-foreground">{new Date(p.created_date).toLocaleDateString("it-IT")}</p>
+                  <p className="text-xs text-muted-foreground">{new Date(p.created_at || p.created_date).toLocaleDateString("it-IT")}</p>
                 </div>
                 <span className={`text-xs font-semibold capitalize ${statusColors[p.status]}`}>{p.status}</span>
               </div>

@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { Search, Loader2, RefreshCw, Lock, ArrowRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,7 @@ import { useFeedEngine } from "../hooks/useFeedEngine";
 import FeedTabs from "../components/feed/FeedTabs";
 import SegmentBadge from "../components/feed/SegmentBadge";
 import CreatorFeedCard from "../components/feed/CreatorFeedCard";
-import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
 
 const PREVIEW_LIMIT = 4;
 
@@ -21,12 +22,10 @@ export default function Feed() {
     refresh,
   } = useFeedEngine();
 
+  const navigate = useNavigate();
+  const { isAuthenticated, isLoadingAuth } = useAuth();
   const [search, setSearch] = useState("");
-  const [isLoggedIn, setIsLoggedIn] = useState(null);
-
-  useEffect(() => {
-    base44.auth.isAuthenticated().then(setIsLoggedIn).catch(() => setIsLoggedIn(false));
-  }, []);
+  const isLoggedIn = isLoadingAuth ? null : isAuthenticated;
 
   const allDisplayed = (currentFeed || []).filter(c => {
     if (!search.trim()) return true;
@@ -136,7 +135,7 @@ export default function Feed() {
                       <Button
                         size="lg"
                         className="bg-primary hover:bg-primary/90 glow-primary font-semibold px-8"
-                        onClick={() => base44.auth.redirectToLogin('/feed')}
+                        onClick={() => navigate('/fan-login')}
                       >
                         Accedi ora
                         <ArrowRight className="w-4 h-4 ml-2" />
@@ -145,7 +144,7 @@ export default function Feed() {
                         size="lg"
                         variant="outline"
                         className="border-border/50 font-medium px-8"
-                        onClick={() => base44.auth.redirectToLogin('/fan-portal')}
+                        onClick={() => navigate('/fan-login?mode=register')}
                       >
                         Registrati gratis
                       </Button>

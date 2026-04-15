@@ -1,6 +1,6 @@
 import AuthGuard from "../components/shared/AuthGuard";
 import { motion } from "framer-motion";
-import { DollarSign, Users, TrendingUp, UserPlus, Upload, Settings, Bell, Zap, MessageCircle, Calendar } from "lucide-react";
+import { DollarSign, Users, TrendingUp, UserPlus, Upload, Settings, MessageCircle, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import StatCard from "../components/dashboard/StatCard";
 import SchedulerCalendar from "../components/dashboard/SchedulerCalendar";
@@ -17,15 +17,13 @@ import VerificationPanel from "../components/dashboard/VerificationPanel";
 import SubscriptionManager from "../components/dashboard/SubscriptionManager";
 import CreatorWallet from "../components/dashboard/CreatorWallet";
 import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("overview");
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
 
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-
     // Check URL param for auto-open publish
     const params = new URLSearchParams(window.location.search);
     if (params.get('action') === 'publish') {

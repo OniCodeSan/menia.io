@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
+import { authService } from "@/lib/auth";
 import { useNavigate, Link } from "react-router-dom";
 import {
   CheckCircle2, ChevronRight, ChevronLeft, Loader2, Camera, Tag,
@@ -76,11 +77,39 @@ const SIDE_CONTENT = {
 
 export default function CreatorOnboarding() {
   const navigate = useNavigate();
+  const { user, updateUser, isLoadingAuth } = useAuth();
   const [stepIndex, setStepIndex] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [profile, setProfile] = useState({ displayName: "", handle: "", bio: "", category: "", tags: "" });
   const [handleStatus, setHandleStatus] = useState(null); // null | 'checking' | 'available' | 'taken'
   const [pricing, setPricing] = useState({ monthly: "9.99", yearly: "89.99" });
+
+  useEffect(() => {
+    if (isLoadingAuth) return;
+    if (!user) {
+      navigate("/creator-login?mode=register", { replace: true });
+      return;
+    }
+    if (user.role === "fan") {
+      navigate("/fan-dashboard", { replace: true });
+      return;
+    }
+    setProfile((p) => ({
+      ...p,
+      displayName: p.displayName || user.display_name || user.full_name || "",
+      handle: p.handle || user.handle || "",
+      bio: p.bio || user.bio || "",
+      category: p.category || user.category || "",
+      tags: p.tags || user.tags || "",
+    }));
+    if (user.monthly_price || user.yearly_price) {
+      setPricing({
+        monthly: user.monthly_price != null ? String(user.monthly_price) : "9.99",
+        yearly: user.yearly_price != null ? String(user.yearly_price) : "89.99",
+      });
+    }
+  }, [user, isLoadingAuth, navigate]);
 
   const step = STEPS[stepIndex].id;
   const next = () => setStepIndex(i => i + 1);
@@ -93,28 +122,30 @@ export default function CreatorOnboarding() {
     if (!clean || clean.length < 3) { setHandleStatus(null); return; }
     setHandleStatus("checking");
     try {
-      const users = await base44.entities.User.filter({ handle: clean });
-      setHandleStatus(users && users.length > 0 ? "taken" : "available");
-    } catch { setHandleStatus(null); }
+      const available = await authService.isHandleAvailable(clean);
+      setHandleStatus(available ? "available" : "taken");
+    } catch {
+      setHandleStatus(null);
+    }
   };
 
   const handleFinish = async () => {
     setSaving(true);
+    setSaveError("");
     try {
-      await base44.auth.updateMe({
+      await updateUser({
         role: "creator",
-        display_name: profile.displayName,
+        full_name: profile.displayName,
         handle: profile.handle,
         bio: profile.bio,
-        category: profile.category,
-        tags: profile.tags,
-        monthly_price: parseFloat(pricing.monthly),
-        yearly_price: parseFloat(pricing.yearly),
         onboarding_complete: true,
       });
-    } catch (e) { /* ignore */ }
-    setSaving(false);
-    next();
+      setSaving(false);
+      next();
+    } catch (e) {
+      setSaveError(e.message || "Errore durante il salvataggio");
+      setSaving(false);
+    }
   };
 
   if (step === "done") {
@@ -318,7 +349,7 @@ export default function CreatorOnboarding() {
                 </Button>
                 <p className="text-center text-xs text-muted-foreground">
                   Hai già un account?{" "}
-                  <button onClick={() => base44.auth.redirectToLogin('/dashboard')} className="text-primary hover:underline font-medium">Accedi</button>
+                  <Link to="/creator-login" className="text-primary hover:underline font-medium">Accedi</Link>
                 </p>
               </motion.div>
             )}
@@ -538,6 +569,9 @@ export default function CreatorOnboarding() {
                   </div>
                 </div>
 
+                {saveError && (
+                  <p className="text-xs text-destructive text-center">{saveError}</p>
+                )}
                 <div className="flex gap-3">
                   <Button variant="outline" onClick={back} className="h-11 px-5 border-border/50">
                     <ChevronLeft className="w-4 h-4" />

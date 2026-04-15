@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Radio, Video, Lock, DollarSign, Zap, ArrowLeft, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,10 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Link, useNavigate } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function GoLive() {
-  const [authorized, setAuthorized] = useState(null);
+  const { user, isLoadingAuth } = useAuth();
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("Fitness");
   const [subOnly, setSubOnly] = useState(false);
@@ -18,11 +18,7 @@ export default function GoLive() {
   const [isStarting, setIsStarting] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    base44.auth.me().then((u) => {
-      setAuthorized(u?.role === "creator" || u?.role === "admin");
-    }).catch(() => setAuthorized(false));
-  }, []);
+  const authorized = isLoadingAuth ? null : (user?.role === "creator" || user?.role === "admin");
 
   const handleStart = () => {
     if (!title.trim()) return;

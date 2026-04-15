@@ -1,15 +1,14 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ChevronLeft, ChevronRight, Plus, X, Calendar, Clock,
-  Video, FileImage, Radio, Bell, BellOff, Trash2, Crown
+  ChevronLeft, ChevronRight, Plus, X, Calendar,
+  Video, FileImage, Radio, Bell, BellOff, Trash2
 } from "lucide-react";
 import MediaUploader from "./MediaUploader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
 
 const TYPE_CONFIG = {
   post:  { label: "Post",   icon: FileImage, color: "text-accent",   bg: "bg-accent/15 border-accent/30" },

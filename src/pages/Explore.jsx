@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Crown, TrendingUp, Flame, Star, X, SlidersHorizontal, Users, Play } from "lucide-react";
+import { Search, TrendingUp, Flame, Star, X, SlidersHorizontal, Users, Play } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";

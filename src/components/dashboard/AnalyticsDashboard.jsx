@@ -4,7 +4,7 @@ import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from "recharts";
-import { TrendingUp, TrendingDown, Heart, Users, Zap, Radio } from "lucide-react";
+import { TrendingUp, TrendingDown, Heart, Users, Radio } from "lucide-react";
 
 const RANGES = [
   { label: "7G", days: 7 },
@@ -68,7 +68,8 @@ function generateLiveEngagement(days) {
 }
 
 // ── Custom Tooltip ────────────────────────────────────────────────────────────
-const CustomTooltip = ({ active, payload, label, prefix = "", suffix = "" }) => {
+// Recharts inietta active/payload/label runtime quando usato come `content=`.
+const CustomTooltip = /** @type {any} */ (({ active, payload, label, prefix = "", suffix = "" }) => {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-card border border-border/50 rounded-xl px-3 py-2.5 shadow-xl text-xs">
@@ -84,7 +85,7 @@ const CustomTooltip = ({ active, payload, label, prefix = "", suffix = "" }) => 
       ))}
     </div>
   );
-};
+});
 
 // ── Stat pill ─────────────────────────────────────────────────────────────────
 function KpiCard({ icon: Icon, label, value, trend, color, delay }) {

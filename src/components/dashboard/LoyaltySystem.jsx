@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Crown, Star, Flame, Zap, Heart, MessageCircle, Gift, TrendingUp, ChevronDown, ChevronUp, Award } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Crown, Star, Flame, Zap, Heart, ChevronDown, ChevronUp, Award } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 // ── Level config ──────────────────────────────────────────────────────────────

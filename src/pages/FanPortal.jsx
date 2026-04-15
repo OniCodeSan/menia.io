@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
 import { Heart, Video, Radio, MessageCircle, ArrowRight, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const BENEFITS = [
   { icon: Video, label: "Contenuti esclusivi", color: "text-primary" },
@@ -13,28 +13,29 @@ const BENEFITS = [
 ];
 
 export default function FanPortal() {
+  const navigate = useNavigate();
+  const { user, isLoadingAuth } = useAuth();
   const [checking, setChecking] = useState(true);
   const [accessDenied, setAccessDenied] = useState(false);
 
   useEffect(() => {
-    base44.auth.me()
-      .then((u) => {
-        if (u.role === "fan" || u.role === "admin") {
-          window.location.href = "/fan-dashboard";
-        } else if (u.role === "creator") {
-          setAccessDenied(true);
-          setChecking(false);
-        } else {
-          setChecking(false);
-        }
-      })
-      .catch(() => {
-        setChecking(false);
-      });
-  }, []);
+    if (isLoadingAuth) return;
+    if (!user) {
+      setChecking(false);
+      return;
+    }
+    if (user.role === "fan" || user.role === "admin") {
+      navigate("/fan-dashboard", { replace: true });
+    } else if (user.role === "creator") {
+      setAccessDenied(true);
+      setChecking(false);
+    } else {
+      setChecking(false);
+    }
+  }, [user, isLoadingAuth, navigate]);
 
   const handleLogin = () => {
-    base44.auth.redirectToLogin("/fan-portal");
+    navigate("/fan-login");
   };
 
   if (checking && !accessDenied) {

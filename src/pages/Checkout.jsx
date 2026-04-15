@@ -1,40 +1,36 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Shield, ArrowLeft, Check, Crown, Lock, Loader2 } from "lucide-react";
+import { Shield, ArrowLeft, Check, Crown, Lock, Loader2, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Link } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { Link, useNavigate } from "react-router-dom";
+import { walletService } from "@/lib/wallet";
+import { useAuth } from "@/lib/AuthContext";
 
-// price IDs
-const PRICE_IDS = {
-  monthly: "price_1TLW1hKGgg4giFxc1pIVi1DJ", // Pro €9.99/mese
-  yearly: "price_1TLW1hKGgg4giFxcmAidRxnx",  // Base €4.99/mese (placeholder annuale)
-};
+const PLAN_TOKENS = { monthly: 100, yearly: 840 };
 
 export default function Checkout() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [plan, setPlan] = useState("monthly");
   const [processing, setProcessing] = useState(false);
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState("");
 
   const handleCheckout = async () => {
-    if (window.self !== window.top) {
-      alert("I pagamenti funzionano solo dall'app pubblicata, non dall'anteprima.");
-      return;
-    }
+    if (!user) { navigate("/fan-login"); return; }
+    setError("");
     setProcessing(true);
     try {
-      const res = await base44.functions.invoke("stripeCheckout", {
-        type: "subscription",
-        priceId: PRICE_IDS[plan],
-        creatorName: "Sara Rossi",
-        successUrl: window.location.origin + "/checkout?success=true",
-        cancelUrl: window.location.origin + "/checkout?cancelled=true",
-      });
-      if (res.data?.url) {
-        window.location.href = res.data.url;
-      }
+      await walletService.spend(
+        user.id,
+        PLAN_TOKENS[plan],
+        `Abbonamento ${plan === "monthly" ? "mensile" : "annuale"} a Sara Rossi`
+      );
+      setDone(true);
     } catch (e) {
-      console.error(e);
+      setError(e.message || "Errore durante l'acquisto");
+    } finally {
       setProcessing(false);
     }
   };
@@ -92,26 +88,34 @@ export default function Checkout() {
 
             {/* Checkout CTA */}
             <div className="bg-card/50 border border-border/30 rounded-2xl p-6">
-              <p className="text-sm text-muted-foreground mb-4">Verrai reindirizzato alla pagina di pagamento sicura di Stripe per completare l'acquisto.</p>
+              <p className="text-sm text-muted-foreground mb-4">L'importo verrà scalato dal tuo saldo Token. Se non hai abbastanza Token puoi ricaricarli dal wallet.</p>
 
-              <Button 
-                onClick={handleCheckout}
-                disabled={processing}
-                className="w-full bg-primary hover:bg-primary/90 glow-primary font-semibold h-12 text-base"
-              >
-                {processing ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <>
-                    <Lock className="w-4 h-4 mr-2" />
-                    Procedi al pagamento — {plan === "monthly" ? "100 T/mese" : "840 T/anno"}
-                  </>
-                )}
-              </Button>
+              {error && <p className="text-sm text-destructive mb-3">{error}</p>}
+
+              {done ? (
+                <div className="flex items-center gap-2 text-chart-3 text-sm p-3 rounded-xl bg-chart-3/10 mb-2">
+                  <CheckCircle2 className="w-4 h-4" /> Abbonamento attivato!
+                </div>
+              ) : (
+                <Button
+                  onClick={handleCheckout}
+                  disabled={processing}
+                  className="w-full bg-primary hover:bg-primary/90 glow-primary font-semibold h-12 text-base"
+                >
+                  {processing ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>
+                      <Lock className="w-4 h-4 mr-2" />
+                      Conferma abbonamento — {plan === "monthly" ? "100 T/mese" : "840 T/anno"}
+                    </>
+                  )}
+                </Button>
+              )}
 
               <div className="flex items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
                 <Shield className="w-3.5 h-3.5" />
-                <span>Pagamento sicuro gestito da Stripe</span>
+                <span>Puoi annullare in qualsiasi momento</span>
               </div>
             </div>
           </motion.div>

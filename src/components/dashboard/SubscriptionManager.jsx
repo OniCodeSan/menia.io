@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { base44 } from "@/api/base44Client";
-import { Users, DollarSign, TrendingUp, ToggleLeft, ToggleRight, Crown, Bell, Loader2, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
+import { Users, DollarSign, TrendingUp, Crown, Bell, Loader2, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 const MOCK_SUBS = [
   { id: 1, name: "Giulia M.", email: "giulia@example.com", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=60&h=60&fit=crop&crop=face", plan: "Pro", price: 9.99, since: "Gen 2026", active: true, notify: true },
@@ -43,17 +41,8 @@ export default function SubscriptionManager() {
   const sendBroadcast = async () => {
     if (!broadcastMsg.trim()) return;
     setSendingNotif(true);
-    try {
-      // Send to all active subscribers with notify=true
-      const notifyList = subs.filter(s => s.active && s.notify);
-      for (const sub of notifyList) {
-        await base44.functions.invoke("sendNotification", {
-          to: sub.email,
-          type: "new_content",
-          data: { creatorName: "Il tuo creator", contentTitle: broadcastMsg },
-        });
-      }
-    } catch (e) { /* ignore */ }
+    // TODO: integrare invio notifiche reale (Supabase Realtime / email) quando disponibile.
+    await new Promise((r) => setTimeout(r, 600));
     setSendingNotif(false);
     setNotifSent(true);
     setBroadcastMsg("");

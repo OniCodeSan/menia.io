@@ -1,37 +1,34 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Heart, X, Loader2 } from "lucide-react";
+import { motion } from "framer-motion";
+import { Heart, X, Loader2, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { base44 } from "@/api/base44Client";
+import { walletService } from "@/lib/wallet";
+import { useAuth } from "@/lib/AuthContext";
 
 const PRESET_AMOUNTS = [20, 50, 100, 200];
 
 export default function DonationModal({ creatorName, onClose }) {
-  const [amount, setAmount] = useState(5);
+  const { user } = useAuth();
+  const [amount, setAmount] = useState(20);
   const [custom, setCustom] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
 
   const finalAmount = custom ? parseInt(custom) : amount;
 
   const handleDonate = async () => {
-    if (window.self !== window.top) {
-      alert("I pagamenti funzionano solo dall'app pubblicata, non dall'anteprima.");
-      return;
-    }
+    if (!user) { setError("Devi accedere per donare"); return; }
     if (!finalAmount || finalAmount < 10) return;
+    setError("");
     setLoading(true);
     try {
-      const res = await base44.functions.invoke("stripeCheckout", {
-        type: "donation",
-        amount: finalAmount,
-        creatorName,
-        successUrl: window.location.origin + window.location.pathname + "?donation=success",
-        cancelUrl: window.location.href,
-      });
-      if (res.data?.url) window.location.href = res.data.url;
+      await walletService.spend(user.id, finalAmount, `Donazione a ${creatorName}`);
+      setSuccess(true);
+      setTimeout(() => onClose?.(), 1500);
     } catch (e) {
-      console.error(e);
+      setError(e.message || "Errore durante la donazione");
     } finally {
       setLoading(false);
     }
@@ -85,14 +82,21 @@ export default function DonationModal({ creatorName, onClose }) {
           />
         </div>
 
-        <Button
-          onClick={handleDonate}
-          disabled={loading || !finalAmount || finalAmount < 10}
-          className="w-full h-11 bg-chart-5 hover:bg-chart-5/90 font-semibold"
-        >
-          {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Heart className="w-4 h-4 mr-2" />}
-          Dona {finalAmount || "—"} Token
-        </Button>
+        {error && <p className="text-xs text-destructive">{error}</p>}
+        {success ? (
+          <div className="flex items-center gap-2 text-chart-3 text-sm p-3 rounded-xl bg-chart-3/10">
+            <CheckCircle2 className="w-4 h-4" /> Donazione inviata! Grazie.
+          </div>
+        ) : (
+          <Button
+            onClick={handleDonate}
+            disabled={loading || !finalAmount || finalAmount < 10}
+            className="w-full h-11 bg-chart-5 hover:bg-chart-5/90 font-semibold"
+          >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Heart className="w-4 h-4 mr-2" />}
+            Dona {finalAmount || "—"} Token
+          </Button>
+        )}
       </motion.div>
     </div>
   );

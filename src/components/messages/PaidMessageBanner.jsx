@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Lock, Unlock, Zap } from "lucide-react";
+import { Lock, Unlock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function PaidMessageBanner({ sender, onUnlock }) {

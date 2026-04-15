@@ -23,9 +23,9 @@ const AUTO_MESSAGES = [
 ];
 
 export default function LiveChat({ onNewDonation }) {
-  const [messages, setMessages] = useState(MOCK_MESSAGES);
+  const [messages, setMessages] = useState(/** @type {any[]} */ (MOCK_MESSAGES));
   const [input, setInput] = useState("");
-  const bottomRef = useRef(null);
+  const scrollRef = useRef(/** @type {HTMLDivElement | null} */ (null));
   const counterRef = useRef(0);
 
   useEffect(() => {
@@ -40,7 +40,10 @@ export default function LiveChat({ onNewDonation }) {
   }, [onNewDonation]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = scrollRef.current;
+    if (!el) return;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+    if (nearBottom) el.scrollTop = el.scrollHeight;
   }, [messages]);
 
   const send = () => {
@@ -54,7 +57,7 @@ export default function LiveChat({ onNewDonation }) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2 scrollbar-none">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain px-3 py-3 space-y-2 scrollbar-none">
         <AnimatePresence initial={false}>
           {messages.map((msg) => (
             <motion.div
@@ -96,7 +99,6 @@ export default function LiveChat({ onNewDonation }) {
             </motion.div>
           ))}
         </AnimatePresence>
-        <div ref={bottomRef} />
       </div>
 
       <div className="px-3 py-3 border-t border-border/30">

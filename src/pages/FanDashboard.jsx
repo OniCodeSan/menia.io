@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import AuthGuard from "../components/shared/AuthGuard";
 import UserWallet from "../components/wallet/UserWallet";
-import { base44 } from "@/api/base44Client";
-import { Flame, Star, Users, Play as PlayIcon } from "lucide-react";
-import { Heart, Bell, BellOff, Crown, Play, Radio, MessageCircle, Search, TrendingUp, Calendar } from "lucide-react";
+import { useAuth } from "@/lib/AuthContext";
+import { Flame, Star, Users } from "lucide-react";
+import { Heart, Bell, BellOff, Crown, Play, Radio, MessageCircle, Search, Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -126,11 +126,7 @@ export default function FanDashboard() {
   const [creators, setCreators] = useState(FAVORITE_CREATORS);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("preferiti");
-  const [currentUser, setCurrentUser] = useState(null);
-
-  useEffect(() => {
-    base44.auth.me().then(setCurrentUser).catch(() => {});
-  }, []);
+  const { user: currentUser } = useAuth();
 
   const toggleNotify = (id) => {
     setCreators(prev => prev.map(c => c.id === id ? { ...c, notify: !c.notify } : c));

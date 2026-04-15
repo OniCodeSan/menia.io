@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { dashboardData } from "../../lib/mockData";
 
-const CustomTooltip = ({ active, payload, label }) => {
+const CustomTooltip = /** @type {any} */ (({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
       <div className="glass-strong rounded-lg border border-border/50 px-3 py-2">
@@ -12,7 +12,7 @@ const CustomTooltip = ({ active, payload, label }) => {
     );
   }
   return null;
-};
+});
 
 export default function RevenueChart() {
   return (

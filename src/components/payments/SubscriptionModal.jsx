@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Crown, X, Check, Loader2 } from "lucide-react";
+import { Crown, X, Check, Loader2, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { base44 } from "@/api/base44Client";
+import { walletService } from "@/lib/wallet";
+import { useAuth } from "@/lib/AuthContext";
 
 const PLANS = [
   {
     id: "base",
     label: "Base",
     price: "50 Token/mese",
-    priceId: "price_1TLW1hKGgg4giFxcmAidRxnx",
+    tokens: 50,
     features: ["Contenuti esclusivi base", "Messaggi diretti", "Community access"],
     color: "border-primary/40 bg-primary/5",
     btnClass: "bg-primary hover:bg-primary/90",
@@ -18,7 +19,7 @@ const PLANS = [
     id: "pro",
     label: "Pro",
     price: "100 Token/mese",
-    priceId: "price_1TLW1hKGgg4giFxc1pIVi1DJ",
+    tokens: 100,
     features: ["Tutto del piano Base", "Live esclusive", "Contenuti premium", "Badge fan Pro"],
     color: "border-chart-4/40 bg-chart-4/5",
     btnClass: "bg-chart-4 hover:bg-chart-4/90",
@@ -27,25 +28,21 @@ const PLANS = [
 ];
 
 export default function SubscriptionModal({ creatorName, onClose }) {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(null);
+  const [error, setError] = useState("");
+  const [doneId, setDoneId] = useState(null);
 
   const handleSubscribe = async (plan) => {
-    if (window.self !== window.top) {
-      alert("I pagamenti funzionano solo dall'app pubblicata, non dall'anteprima.");
-      return;
-    }
+    if (!user) { setError("Devi accedere per abbonarti"); return; }
+    setError("");
     setLoading(plan.id);
     try {
-      const res = await base44.functions.invoke("stripeCheckout", {
-        type: "subscription",
-        priceId: plan.priceId,
-        creatorName,
-        successUrl: window.location.origin + window.location.pathname + "?sub=success",
-        cancelUrl: window.location.href,
-      });
-      if (res.data?.url) window.location.href = res.data.url;
+      await walletService.spend(user.id, plan.tokens, `Abbonamento ${plan.label} a ${creatorName}`);
+      setDoneId(plan.id);
+      setTimeout(() => onClose?.(), 1500);
     } catch (e) {
-      console.error(e);
+      setError(e.message || "Errore durante l'abbonamento");
     } finally {
       setLoading(null);
     }
@@ -69,6 +66,7 @@ export default function SubscriptionModal({ creatorName, onClose }) {
           </button>
         </div>
 
+        {error && <p className="text-xs text-destructive">{error}</p>}
         <div className="grid sm:grid-cols-2 gap-4">
           {PLANS.map((plan) => (
             <div key={plan.id} className={`border rounded-2xl p-4 space-y-4 relative ${plan.color}`}>
@@ -91,10 +89,16 @@ export default function SubscriptionModal({ creatorName, onClose }) {
               </ul>
               <Button
                 onClick={() => handleSubscribe(plan)}
-                disabled={loading === plan.id}
+                disabled={loading === plan.id || doneId != null}
                 className={`w-full h-9 text-sm font-semibold text-white ${plan.btnClass}`}
               >
-                {loading === plan.id ? <Loader2 className="w-4 h-4 animate-spin" /> : `Scegli ${plan.label}`}
+                {loading === plan.id ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : doneId === plan.id ? (
+                  <><CheckCircle2 className="w-4 h-4 mr-1" /> Attivo</>
+                ) : (
+                  `Scegli ${plan.label}`
+                )}
               </Button>
             </div>
           ))}

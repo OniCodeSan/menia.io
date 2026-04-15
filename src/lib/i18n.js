@@ -82,7 +82,7 @@ export const translations = {
       privacy: "Privacy",
       terms: "Termini",
       support: "Supporto",
-      copyright: "© 2026 Unlockr. Tutti i diritti riservati.",
+      copyright: "© 2026 Tokaro.fans. Tutti i diritti riservati.",
     },
     // Bottom Nav
     bottomNav: {
@@ -247,7 +247,7 @@ export const translations = {
       privacy: "Privacy",
       terms: "Terms",
       support: "Support",
-      copyright: "© 2026 Unlockr. All rights reserved.",
+      copyright: "© 2026 Tokaro.fans. All rights reserved.",
     },
     bottomNav: {
       home: "Home",
@@ -410,7 +410,7 @@ export const translations = {
       privacy: "Confidentialité",
       terms: "Conditions",
       support: "Support",
-      copyright: "© 2026 Unlockr. Tous droits réservés.",
+      copyright: "© 2026 Tokaro.fans. Tous droits réservés.",
     },
     bottomNav: {
       home: "Accueil",
@@ -573,7 +573,7 @@ export const translations = {
       privacy: "Datenschutz",
       terms: "Nutzungsbedingungen",
       support: "Support",
-      copyright: "© 2026 Unlockr. Alle Rechte vorbehalten.",
+      copyright: "© 2026 Tokaro.fans. Alle Rechte vorbehalten.",
     },
     bottomNav: {
       home: "Startseite",
@@ -736,7 +736,7 @@ export const translations = {
       privacy: "Privacidad",
       terms: "Términos",
       support: "Soporte",
-      copyright: "© 2026 Unlockr. Todos los derechos reservados.",
+      copyright: "© 2026 Tokaro.fans. Todos los derechos reservados.",
     },
     bottomNav: {
       home: "Inicio",
@@ -899,7 +899,7 @@ export const translations = {
       privacy: "Конфиденциальность",
       terms: "Условия",
       support: "Поддержка",
-      copyright: "© 2026 Unlockr. Все права защищены.",
+      copyright: "© 2026 Tokaro.fans. Все права защищены.",
     },
     bottomNav: {
       home: "Главная",

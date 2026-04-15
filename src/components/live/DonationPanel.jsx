@@ -1,22 +1,57 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, Crown, Heart, Gift } from "lucide-react";
+import { Zap, Crown, Heart, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/lib/AuthContext";
+import { walletService } from "@/lib/wallet";
 
-const QUICK_AMOUNTS = [2, 5, 10, 20, 50];
+const QUICK_AMOUNTS = [20, 50, 100, 200, 500];
+const MIN_DONATION = 10;
 
-export default function DonationPanel({ creatorName, isSubscribed }) {
+export default function DonationPanel({ creatorName, isSubscribed, onDonated }) {
+  const { user } = useAuth();
   const [amount, setAmount] = useState("");
   const [donated, setDonated] = useState(false);
   const [activeTab, setActiveTab] = useState("donate");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [balance, setBalance] = useState(/** @type {number | null} */ (null));
 
-  const handleDonate = () => {
-    if (!amount && !parseInt(amount)) return;
-    setDonated(true);
-    setTimeout(() => setDonated(false), 3000);
-    setAmount("");
+  useEffect(() => {
+    let cancelled = false;
+    if (!user) { setBalance(null); return; }
+    walletService.getUserWallet(user.id)
+      .then((w) => { if (!cancelled) setBalance(w?.balance ?? 0); })
+      .catch(() => { if (!cancelled) setBalance(0); });
+    return () => { cancelled = true; };
+  }, [user]);
+
+  const parsedAmount = parseInt(amount, 10);
+  const validAmount = Number.isFinite(parsedAmount) && parsedAmount >= MIN_DONATION;
+
+  const handleDonate = async () => {
+    setError("");
+    if (!user) { setError("Devi accedere per donare token."); return; }
+    if (!validAmount) { setError(`Minimo ${MIN_DONATION} token.`); return; }
+    if (balance !== null && parsedAmount > balance) {
+      setError("Saldo token insufficiente.");
+      return;
+    }
+    setLoading(true);
+    try {
+      await walletService.spend(user.id, parsedAmount, `Donazione live a ${creatorName}`);
+      setBalance((b) => (b === null ? b : b - parsedAmount));
+      setDonated(true);
+      onDonated?.({ user: "Tu", amount: parsedAmount, type: "donation" });
+      setTimeout(() => setDonated(false), 3000);
+      setAmount("");
+    } catch (e) {
+      setError(/** @type {any} */ (e)?.message || "Errore durante la donazione.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -43,7 +78,15 @@ export default function DonationPanel({ creatorName, isSubscribed }) {
       <AnimatePresence mode="wait">
         {activeTab === "donate" ? (
           <motion.div key="donate" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <p className="text-xs text-muted-foreground mb-3">Supporta {creatorName} con una donazione</p>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs text-muted-foreground">Supporta {creatorName} con i tuoi Token</p>
+              {balance !== null && (
+                <span className="text-[11px] font-semibold text-chart-4 flex items-center gap-1">
+                  <Zap className="w-3 h-3" />
+                  {balance} T
+                </span>
+              )}
+            </div>
             <div className="grid grid-cols-5 gap-1.5 mb-3">
               {QUICK_AMOUNTS.map((a) => (
                 <button
@@ -55,18 +98,26 @@ export default function DonationPanel({ creatorName, isSubscribed }) {
                       : "border-border/30 hover:border-chart-4/30 text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  €{a}
+                  {a} T
                 </button>
               ))}
             </div>
-            <div className="flex gap-2 mb-3">
+            <div className="flex gap-2 mb-2">
               <Input
+                type="number"
+                min={MIN_DONATION}
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                placeholder="Importo personalizzato..."
+                placeholder={`Token personalizzati (min ${MIN_DONATION})`}
                 className="flex-1 bg-secondary/40 border-border/30 h-9 text-sm"
               />
             </div>
+            {error && <p className="text-[11px] text-destructive mb-2">{error}</p>}
+            {!user && (
+              <p className="text-[11px] text-muted-foreground mb-2">
+                <Link to="/fan-login" className="text-primary underline">Accedi</Link> per donare token.
+              </p>
+            )}
             <AnimatePresence>
               {donated ? (
                 <motion.div
@@ -81,11 +132,11 @@ export default function DonationPanel({ creatorName, isSubscribed }) {
               ) : (
                 <Button
                   onClick={handleDonate}
-                  disabled={!amount}
+                  disabled={loading || !validAmount}
                   className="w-full h-9 bg-chart-4 hover:bg-chart-4/90 text-background font-semibold text-sm"
                 >
-                  <Zap className="w-4 h-4 mr-1.5" />
-                  Dona {amount ? `€${amount}` : ""}
+                  {loading ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Zap className="w-4 h-4 mr-1.5" />}
+                  Dona {validAmount ? `${parsedAmount} T` : "Token"}
                 </Button>
               )}
             </AnimatePresence>
@@ -114,7 +165,7 @@ export default function DonationPanel({ creatorName, isSubscribed }) {
                 <Link to="/checkout">
                   <Button className="w-full h-9 bg-primary hover:bg-primary/90 glow-primary font-semibold text-sm">
                     <Crown className="w-4 h-4 mr-1.5" />
-                    Abbonati — €9.99/mese
+                    Abbonati — 120 Token / mese
                   </Button>
                 </Link>
               </div>
