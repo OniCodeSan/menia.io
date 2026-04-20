@@ -343,7 +343,7 @@ function BillingSection({ returnOrderId }) {
                 <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1.5">
                   {plan.publish_premium_content && <span className="text-[10px] text-muted-foreground">Contenuti premium</span>}
                   {plan.paid_dm && <span className="text-[10px] text-muted-foreground">DM a pagamento</span>}
-                  {plan.go_live && <span className="text-[10px] text-muted-foreground">Live streaming</span>}
+                  {plan.go_live && <span className="text-[10px] text-muted-foreground">Live streaming{plan.monthly_live_limit != null ? ` (${plan.monthly_live_limit}/mese)` : ""}</span>}
                 </div>
               </div>
               {isCurrent ? (

@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 import { canCreatorUse } from "@/lib/plans";
+import { canCreatorStartLive } from "@/lib/liveAccess";
 import { supabase, hasSupabase } from "@/lib/supabase";
 import LiveChat from "../components/live/LiveChat";
 import DonationPanel from "../components/live/DonationPanel";
@@ -55,11 +56,18 @@ export default function GoLive() {
   const [permissionState, setPermissionState] = useState("idle");
 
   const [currentDonation, setCurrentDonation] = useState(null);
+  const [liveAccess, setLiveAccess] = useState(null);
   const elapsed = useElapsed(mode === "broadcasting");
 
   const isCreatorOrAdmin = user?.role === "creator" || user?.role === "admin";
-  const canLive = canCreatorUse("go_live", user?.plan, user?.role);
-  const authorized = isLoadingAuth ? null : (isCreatorOrAdmin && canLive);
+
+  useEffect(() => {
+    if (!user || !isCreatorOrAdmin || isLoadingAuth) return;
+    canCreatorStartLive(user.id, user.role).then(setLiveAccess);
+  }, [user, isCreatorOrAdmin, isLoadingAuth]);
+
+  const authorized = isLoadingAuth ? null : !isCreatorOrAdmin ? false : liveAccess === null ? null : liveAccess.allowed;
+  const accessBlocked = liveAccess && !liveAccess.allowed;
 
   const attachStream = useCallback((stream) => {
     const el = mode === "broadcasting" ? broadcastVideoRef.current : videoRef.current;
@@ -205,13 +213,9 @@ export default function GoLive() {
     setIsStarting(true);
     try {
       if (hasSupabase && user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("plan")
-          .eq("id", user.id)
-          .maybeSingle();
-        if (!canCreatorUse("go_live", profile?.plan, user?.role)) {
-          throw new Error("Piano Pro richiesto per le dirette live.");
+        const check = await canCreatorStartLive(user.id, user.role);
+        if (!check.allowed) {
+          throw new Error(check.reason);
         }
 
         const { data, error } = await supabase
@@ -264,16 +268,27 @@ export default function GoLive() {
 
   if (authorized === null) return null;
 
-  if (!authorized) {
+  if (authorized === false) {
+    const reason = liveAccess?.reason || (!isCreatorOrAdmin ? "Solo i creator possono avviare una diretta." : "Il tuo piano non include le dirette live.");
+    const title = !isCreatorOrAdmin
+      ? "Accesso riservato ai Creator"
+      : liveAccess?.limit !== undefined
+        ? `Hai esaurito le ${liveAccess.limit} live mensili`
+        : "Live non disponibile";
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 text-center px-4">
         <div className="w-20 h-20 rounded-2xl bg-destructive/10 flex items-center justify-center">
           <Lock className="w-10 h-10 text-destructive" />
         </div>
         <div>
-          <h2 className="font-heading text-2xl font-bold mb-2">{isCreatorOrAdmin && !canLive ? "Piano Pro richiesto" : "Accesso riservato ai Creator"}</h2>
-          <p className="text-muted-foreground text-sm max-w-xs">{isCreatorOrAdmin && !canLive ? "Le dirette live sono disponibili con il piano Pro." : "Solo i creator possono avviare una diretta."}</p>
+          <h2 className="font-heading text-2xl font-bold mb-2">{title}</h2>
+          <p className="text-muted-foreground text-sm max-w-xs">{reason}</p>
         </div>
+        {isCreatorOrAdmin && liveAccess?.plan !== "pro" && (
+          <Button onClick={() => navigate("/dashboard?tab=settings")} className="bg-primary hover:bg-primary/90 font-semibold">
+            Passa a PRO
+          </Button>
+        )}
       </div>
     );
   }
@@ -430,7 +445,16 @@ export default function GoLive() {
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <h1 className="font-heading text-2xl font-bold mb-1">Vai in diretta</h1>
-          <p className="text-sm text-muted-foreground mb-8">Configura il tuo live stream e inizia a interagire con i tuoi fan</p>
+          <p className="text-sm text-muted-foreground mb-4">Configura il tuo live stream e inizia a interagire con i tuoi fan</p>
+
+          {liveAccess && liveAccess.limit !== null && (
+            <div className="flex items-center gap-2 mb-6 px-4 py-2.5 rounded-xl bg-primary/10 border border-primary/20 text-sm">
+              <Radio className="w-4 h-4 text-primary shrink-0" />
+              <span className="font-medium">
+                Live disponibili questo mese: <span className="font-bold text-primary">{Math.max(0, liveAccess.limit - liveAccess.used)}/{liveAccess.limit}</span>
+              </span>
+            </div>
+          )}
 
           {/* Camera preview */}
           <div className="relative rounded-2xl overflow-hidden border border-border/30 aspect-video mb-4 bg-black">

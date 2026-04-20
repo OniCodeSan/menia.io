@@ -7,6 +7,7 @@ export const PLAN_FEATURES = {
     receive_tokens: false,
     paid_dm: false,
     go_live: false,
+    monthly_live_limit: 0,
     analytics: "none",
   },
   start: {
@@ -16,7 +17,8 @@ export const PLAN_FEATURES = {
     publish_premium_content: true,
     receive_tokens: true,
     paid_dm: true,
-    go_live: false,
+    go_live: true,
+    monthly_live_limit: 2,
     analytics: "basic",
   },
   pro: {
@@ -27,6 +29,7 @@ export const PLAN_FEATURES = {
     receive_tokens: true,
     paid_dm: true,
     go_live: true,
+    monthly_live_limit: null,
     analytics: "advanced",
   },
 };
@@ -50,4 +53,11 @@ export function canCreatorUse(feature, plan, role) {
   if (!p) return false;
   if (feature === "analytics") return p.analytics;
   return !!p[feature];
+}
+
+export function getLiveLimit(plan, role) {
+  if (role === "admin") return null;
+  const p = PLAN_FEATURES[plan];
+  if (!p) return 0;
+  return p.monthly_live_limit;
 }
