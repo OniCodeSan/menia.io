@@ -10,6 +10,8 @@ import { supabase, hasSupabase } from "@/lib/supabase";
 import { storageService } from "@/lib/storage";
 import { useLanguage } from "@/lib/LanguageContext";
 import { toast } from "@/components/ui/use-toast";
+import CouponField from "@/components/payments/CouponField";
+import { applyDiscount, markCouponUsed } from "@/lib/coupons";
 
 export default function Checkout() {
   const { user } = useAuth();
@@ -32,6 +34,7 @@ export default function Checkout() {
   const [processing, setProcessing] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
+  const [coupon, setCoupon] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -140,7 +143,9 @@ export default function Checkout() {
   const yearlyDiscount = yearlyFullPrice - yearly;
   const yearlySavingsPct = Math.round((yearlyDiscount / yearlyFullPrice) * 100);
   const unlockPrice = isUnlock ? content.unlockPriceTokens : 0;
-  const finalTokens = isUnlock ? unlockPrice : plan === "monthly" ? monthly : yearly;
+  const baseTokens = isUnlock ? unlockPrice : plan === "monthly" ? monthly : yearly;
+  const finalTokens = applyDiscount(baseTokens, coupon);
+  const discountAmount = baseTokens - finalTokens;
 
   const handleCheckout = async () => {
     if (!user) {
@@ -152,6 +157,7 @@ export default function Checkout() {
     try {
       if (isUnlock) {
         await processContentUnlock(user.id, content.id);
+        if (coupon) markCouponUsed(coupon.id);
         toast({ title: "Contenuto sbloccato!" });
         setDone(true);
       } else {
@@ -159,6 +165,7 @@ export default function Checkout() {
         if (!cid) throw new Error("Creator non valido");
         const tier = tierParam === "premium" ? "premium" : "base";
         await processSubscription(user.id, cid, tier);
+        if (coupon) markCouponUsed(coupon.id);
         toast({ title: `Abbonamento attivato per ${creator.name}!` });
         setDone(true);
       }
@@ -237,6 +244,14 @@ export default function Checkout() {
             )}
 
             <div className="bg-card/50 border border-border/30 rounded-2xl p-6">
+              <div className="mb-4">
+                <CouponField
+                  appliedCoupon={coupon}
+                  onApply={(c) => setCoupon(c)}
+                  onRemove={() => setCoupon(null)}
+                />
+              </div>
+
               <p className="text-sm text-muted-foreground mb-4">{tCK.description}</p>
 
               {error && <p className="text-sm text-destructive mb-3">{error}</p>}
@@ -312,9 +327,15 @@ export default function Checkout() {
                       <span className="text-muted-foreground">{tCK.contentColumn}</span>
                       <span>{unlockPrice} T</span>
                     </div>
+                    {discountAmount > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-chart-3">Sconto coupon</span>
+                        <span className="text-chart-3">-{discountAmount} T</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-base font-bold pt-2 border-t border-border/30">
                       <span>{tCK.total}</span>
-                      <span className="text-primary">{unlockPrice} T</span>
+                      <span className="text-primary">{finalTokens} T</span>
                     </div>
                   </>
                 ) : plan === "monthly" ? (
@@ -323,9 +344,15 @@ export default function Checkout() {
                       <span className="text-muted-foreground">{tCK.subtotal}</span>
                       <span>{monthly} T</span>
                     </div>
+                    {discountAmount > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-chart-3">Sconto coupon</span>
+                        <span className="text-chart-3">-{discountAmount} T</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-base font-bold pt-2 border-t border-border/30">
                       <span>{tCK.total}</span>
-                      <span className="text-primary">{monthly} {tCK.perMonth}</span>
+                      <span className="text-primary">{finalTokens} {tCK.perMonth}</span>
                     </div>
                   </>
                 ) : (
@@ -338,9 +365,15 @@ export default function Checkout() {
                       <span className="text-chart-3">{tCK.yearlyDiscount} (-{yearlySavingsPct}%)</span>
                       <span className="text-chart-3">-{yearlyDiscount} T</span>
                     </div>
+                    {discountAmount > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-chart-3">Sconto coupon</span>
+                        <span className="text-chart-3">-{discountAmount} T</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-base font-bold pt-2 border-t border-border/30">
                       <span>{tCK.total}</span>
-                      <span className="text-primary">{yearly} {tCK.perYear}</span>
+                      <span className="text-primary">{finalTokens} {tCK.perYear}</span>
                     </div>
                   </>
                 )}
