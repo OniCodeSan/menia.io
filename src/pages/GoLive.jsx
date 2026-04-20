@@ -58,7 +58,7 @@ export default function GoLive() {
   const elapsed = useElapsed(mode === "broadcasting");
 
   const isCreatorOrAdmin = user?.role === "creator" || user?.role === "admin";
-  const canLive = canCreatorUse("go_live", user?.plan);
+  const canLive = canCreatorUse("go_live", user?.plan, user?.role);
   const authorized = isLoadingAuth ? null : (isCreatorOrAdmin && canLive);
 
   const attachStream = useCallback((stream) => {
@@ -210,7 +210,7 @@ export default function GoLive() {
           .select("plan")
           .eq("id", user.id)
           .maybeSingle();
-        if (!canCreatorUse("go_live", profile?.plan)) {
+        if (!canCreatorUse("go_live", profile?.plan, user?.role)) {
           throw new Error("Piano Pro richiesto per le dirette live.");
         }
 

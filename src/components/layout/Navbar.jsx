@@ -101,7 +101,7 @@ export default function Navbar() {
 
         <div className="hidden md:flex items-center gap-2">
           {/* Go Live button for creators */}
-          {currentUser && (currentUser.role === 'creator' || currentUser.role === 'admin') && canCreatorUse("go_live", currentUser.plan) && (
+          {currentUser && (currentUser.role === 'creator' || currentUser.role === 'admin') && canCreatorUse("go_live", currentUser.plan, currentUser.role) && (
             <Button
               variant="ghost"
               size="sm"
@@ -322,7 +322,7 @@ export default function Navbar() {
                     <Settings className="w-4 h-4 text-muted-foreground" />
                     Impostazioni
                   </Link>
-                  {(currentUser.role === 'creator' || currentUser.role === 'admin') && canCreatorUse("go_live", currentUser.plan) && (
+                  {(currentUser.role === 'creator' || currentUser.role === 'admin') && canCreatorUse("go_live", currentUser.plan, currentUser.role) && (
                     <button
                       onClick={() => { setShowMobileMenu(false); navigate("/go-live"); }}
                       className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-red-500/10 transition-colors text-sm text-red-400 font-semibold"

@@ -24,7 +24,7 @@ const ACCESS_LEVELS = [
 
 export default function PublishContent({ onPublished, onNavigateContent }) {
   const { user } = useAuth();
-  const canPremium = canCreatorUse("publish_premium_content", user?.plan);
+  const canPremium = canCreatorUse("publish_premium_content", user?.plan, user?.role);
   const [contentType, setContentType] = useState("post");
   const [access, setAccess] = useState("public");
   const [title, setTitle] = useState("");

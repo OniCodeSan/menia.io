@@ -44,7 +44,8 @@ export const PAYOUT_RATE = 0.10;
 
 export const DM_COST = 1;
 
-export function canCreatorUse(feature, plan) {
+export function canCreatorUse(feature, plan, role) {
+  if (role === "admin") return feature === "analytics" ? "advanced" : true;
   const p = PLAN_FEATURES[plan];
   if (!p) return false;
   if (feature === "analytics") return p.analytics;

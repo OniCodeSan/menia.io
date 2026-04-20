@@ -40,7 +40,7 @@ export const postsService = {
         .select("plan")
         .eq("id", sess.user.id)
         .maybeSingle();
-      if (!canCreatorUse("publish_premium_content", profile?.plan)) {
+      if (!canCreatorUse("publish_premium_content", profile?.plan, profile?.role)) {
         throw new Error("Il tuo piano non consente contenuti riservati. Passa al piano Start o Pro.");
       }
     }
