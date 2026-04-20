@@ -66,55 +66,19 @@ const supabaseImpl = {
     return (data || []).map((tx) => ({ ...tx, created_date: tx.created_at }));
   },
 
-  async topUp(userId, amount, description = "Ricarica") {
-    const wallet = await ensureWalletRemote(userId, "user");
-    if (!wallet) throw new Error("Wallet non disponibile");
-    const { data: updated, error: updErr } = await supabase
-      .from("token_wallets")
-      .update({
-        balance: wallet.balance + amount,
-        total_earned: (wallet.total_earned || 0) + amount,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", wallet.id)
-      .select()
-      .maybeSingle();
-    if (updErr) throw new Error(updErr.message);
-
-    await supabase.from("token_transactions").insert({
-      user_id: wallet.user_id,
-      wallet_type: "user",
-      type: "topup",
-      amount,
-      description,
-    });
-    return updated;
+  async topUp() {
+    throw new Error("Le ricariche token vengono gestite dall'amministrazione");
   },
 
-  async spend(userId, amount, description = "Spesa") {
-    const wallet = await ensureWalletRemote(userId, "user");
-    if (!wallet) throw new Error("Wallet non disponibile");
-    if (wallet.balance < amount) throw new Error("Saldo insufficiente");
-    const { data: updated, error: updErr } = await supabase
-      .from("token_wallets")
-      .update({
-        balance: wallet.balance - amount,
-        total_spent: (wallet.total_spent || 0) + amount,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", wallet.id)
-      .select()
-      .maybeSingle();
-    if (updErr) throw new Error(updErr.message);
-
-    await supabase.from("token_transactions").insert({
-      user_id: wallet.user_id,
-      wallet_type: "user",
-      type: "spend",
-      amount: -amount,
-      description,
+  async spend(userId, amount, description = "Spesa", refId = null, refType = null) {
+    const { data, error } = await supabase.rpc("wallet_spend", {
+      p_amount: amount,
+      p_description: description,
+      p_ref_id: refId,
+      p_ref_type: refType,
     });
-    return updated;
+    if (error) throw new Error(error.message);
+    return { balance: data?.balance ?? 0 };
   },
 
   async hasLiveAccess(userId, liveId) {
@@ -134,75 +98,12 @@ const supabaseImpl = {
     return (data || []).length > 0;
   },
 
-  async purchaseLiveAccess(userId, liveId, amount, description = "Accesso live") {
-    const uid = userId || (await getCurrentUserId());
-    if (!uid) throw new Error("Nessun utente autenticato");
-    if (!liveId) throw new Error("Live non valida");
-    if (await this.hasLiveAccess(uid, liveId)) return { alreadyOwned: true };
-
-    const wallet = await ensureWalletRemote(uid, "user");
-    if (!wallet) throw new Error("Wallet non disponibile");
-    if (wallet.balance < amount) throw new Error("Saldo insufficiente");
-
-    const { error: updErr } = await supabase
-      .from("token_wallets")
-      .update({
-        balance: wallet.balance - amount,
-        total_spent: (wallet.total_spent || 0) + amount,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", wallet.id);
-    if (updErr) throw new Error(updErr.message);
-
-    await supabase.from("token_transactions").insert({
-      user_id: uid,
-      wallet_type: "user",
-      type: "spend",
-      amount: -amount,
-      description,
-      ref_id: `live:${liveId}`,
-    });
-    return { alreadyOwned: false };
-  },
-
   async requestPayout(creatorId, tokenAmount, notes = "") {
-    const uid = creatorId || (await getCurrentUserId());
-    if (!uid) throw new Error("Nessun utente autenticato");
-    const creatorWallet = await ensureWalletRemote(uid, "creator");
-    if (!creatorWallet || creatorWallet.balance < tokenAmount) {
-      throw new Error("Saldo creator insufficiente");
-    }
-    const euroAmount = Number((tokenAmount * 0.08).toFixed(2));
-    const { data, error } = await supabase
-      .from("payout_requests")
-      .insert({
-        creator_id: uid,
-        token_amount: tokenAmount,
-        euro_amount: euroAmount,
-        status: "pending",
-        notes,
-      })
-      .select()
-      .maybeSingle();
-    if (error) throw new Error(error.message);
-
-    await supabase
-      .from("token_wallets")
-      .update({
-        balance: creatorWallet.balance - tokenAmount,
-        total_spent: (creatorWallet.total_spent || 0) + tokenAmount,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", creatorWallet.id);
-
-    await supabase.from("token_transactions").insert({
-      user_id: uid,
-      wallet_type: "creator",
-      type: "payout",
-      amount: -tokenAmount,
-      description: `Richiesta payout €${euroAmount}`,
+    const { data, error } = await supabase.rpc("wallet_request_payout", {
+      p_token_amount: tokenAmount,
+      p_notes: notes,
     });
-
+    if (error) throw new Error(error.message);
     return data;
   },
 
@@ -318,7 +219,7 @@ const localImpl = {
       balance: wallet.balance - tokenAmount,
       total_spent: (wallet.total_spent || 0) + tokenAmount,
     });
-    const euroAmount = Number((tokenAmount * 0.08).toFixed(2));
+    const euroAmount = Number((tokenAmount * 0.10).toFixed(2));
     return { id: crypto.randomUUID(), token_amount: tokenAmount, euro_amount: euroAmount, status: "pending", created_at: new Date().toISOString() };
   },
   async listPayouts() {
@@ -329,6 +230,3 @@ const localImpl = {
 export const walletService = hasSupabase ? supabaseImpl : localImpl;
 export const walletBackend = hasSupabase ? "supabase" : "local";
 
-if (typeof window !== "undefined") {
-  /** @type {any} */ (window).__tokaroWallet = walletService;
-}

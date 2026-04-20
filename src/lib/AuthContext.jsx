@@ -1,11 +1,38 @@
 import React, { createContext, useState, useContext, useEffect, useCallback, useRef } from "react";
-import { authService } from "./auth";
+import { authService, isAuthBroken } from "./auth";
 
 const AuthContext = createContext(null);
+
+function AuthErrorBanner() {
+  return (
+    <div style={{
+      position: "fixed", top: 0, left: 0, right: 0, zIndex: 99999,
+      background: "#dc2626", color: "#fff", padding: "12px 16px",
+      textAlign: "center", fontSize: "14px", fontFamily: "system-ui, sans-serif",
+    }}>
+      <strong>Errore di autenticazione</strong> — Alcune funzionalità potrebbero non funzionare.{" "}
+      <button
+        onClick={() => {
+          Object.keys(localStorage)
+            .filter((k) => k.startsWith("tokaro:sb"))
+            .forEach((k) => localStorage.removeItem(k));
+          window.location.reload();
+        }}
+        style={{
+          background: "#fff", color: "#dc2626", border: "none", borderRadius: "4px",
+          padding: "4px 12px", cursor: "pointer", fontWeight: 600, marginLeft: "8px",
+        }}
+      >
+        Ripara e ricarica
+      </button>
+    </div>
+  );
+}
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
+  const [authError, setAuthError] = useState(null);
   const mounted = useRef(true);
 
   const applyUser = useCallback((u) => {
@@ -15,11 +42,13 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const refresh = useCallback(async () => {
+    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("auth timeout")), 8000));
     try {
-      const u = await authService.me();
+      const u = await Promise.race([authService.me(), timeout]);
       applyUser(u);
-    } catch {
+    } catch (err) {
       applyUser(null);
+      if (isAuthBroken()) setAuthError(err?.message || "Auth broken");
     }
   }, [applyUser]);
 
@@ -72,7 +101,7 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated: !!user,
         isLoadingAuth,
         isLoadingPublicSettings: false,
-        authError: null,
+        authError,
         login,
         register,
         logout,
@@ -83,6 +112,7 @@ export const AuthProvider = ({ children }) => {
         },
       }}
     >
+      {authError && <AuthErrorBanner />}
       {children}
     </AuthContext.Provider>
   );

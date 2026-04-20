@@ -81,6 +81,3 @@ export const db = {
 
 export const SESSION_KEY = `${STORAGE_PREFIX}session`;
 
-if (typeof window !== "undefined") {
-  /** @type {any} */ (window).__tokaroDb = db;
-}

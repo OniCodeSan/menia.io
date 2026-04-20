@@ -9,10 +9,11 @@ import LoyaltySystem from "../components/dashboard/LoyaltySystem";
 import RevenueChart from "../components/dashboard/RevenueChart";
 import FunnelVisual from "../components/dashboard/FunnelVisual";
 import FanCRM from "../components/dashboard/FanCRM";
-import { dashboardData } from "../lib/mockData";
+import { fetchCreatorMetrics } from "../lib/creatorMetrics";
 import NotificationsDropdown from "../components/dashboard/NotificationsDropdown";
 import SettingsPanel from "../components/dashboard/SettingsPanel";
 import PublishContent from "../components/dashboard/PublishContent";
+import MyPosts from "../components/dashboard/MyPosts";
 import VerificationPanel from "../components/dashboard/VerificationPanel";
 import SubscriptionManager from "../components/dashboard/SubscriptionManager";
 import CreatorWallet from "../components/dashboard/CreatorWallet";
@@ -21,17 +22,30 @@ import { useAuth } from "@/lib/AuthContext";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("overview");
+  const [postsRefreshKey, setPostsRefreshKey] = useState(0);
   const { user } = useAuth();
+  const [metrics, setMetrics] = useState(null);
 
   useEffect(() => {
-    // Check URL param for auto-open publish
+    if (!user) return;
+    fetchCreatorMetrics(user.id).then(setMetrics);
+  }, [user]);
+
+  const [billingReturnOrder, setBillingReturnOrder] = useState(null);
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('action') === 'publish') {
       setActiveTab('publish');
       window.history.replaceState({}, '', '/dashboard');
     }
+    if (params.get('tab') === 'settings') {
+      setActiveTab('settings');
+      const orderId = params.get('order');
+      if (orderId) setBillingReturnOrder(orderId);
+      window.history.replaceState({}, '', '/dashboard');
+    }
 
-    // Listen for navbar publish event
     const handler = () => setActiveTab('publish');
     window.addEventListener('navbar:publish', handler);
     return () => window.removeEventListener('navbar:publish', handler);
@@ -66,6 +80,7 @@ export default function Dashboard() {
               { id: "subscriptions", label: "Abbonamenti" },
               { id: "calendar", label: "Calendario" },
               { id: "publish", label: "Pubblica" },
+              { id: "content", label: "Contenuti" },
               { id: "verification", label: "Verifica & KYC" },
               { id: "wallet", label: "Wallet Creator" },
               { id: "settings", label: "Impostazioni" },
@@ -89,17 +104,17 @@ export default function Dashboard() {
           <>
             {/* Stats */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <StatCard title="Entrate Totali" value={`€${dashboardData.revenue.toLocaleString()}`} trend={dashboardData.revenueTrend} icon={DollarSign} delay={0} />
-              <StatCard title="Fan Attivi" value={dashboardData.activeFans.toLocaleString()} trend={dashboardData.fansTrend} icon={Users} delay={0.05} />
-              <StatCard title="Conversione" value={`${dashboardData.conversionRate}%`} trend={dashboardData.conversionTrend} icon={TrendingUp} delay={0.1} />
-              <StatCard title="Nuovi Abbonati" value={dashboardData.newSubs} trend={dashboardData.newSubsTrend} icon={UserPlus} delay={0.15} />
+              <StatCard title="Token Guadagnati" value={metrics ? `${metrics.revenue.toLocaleString()} T` : "—"} trend={metrics?.revenueTrend} icon={DollarSign} delay={0} />
+              <StatCard title="Fan Attivi" value={metrics ? metrics.activeFans.toLocaleString() : "—"} trend={metrics?.fansTrend} icon={Users} delay={0.05} />
+              <StatCard title="Conversione" value={metrics ? `${metrics.conversionRate}%` : "—"} trend={metrics?.conversionTrend} icon={TrendingUp} delay={0.1} />
+              <StatCard title="Nuovi Abbonati" value={metrics ? metrics.newSubs : "—"} trend={metrics?.newSubsTrend} icon={UserPlus} delay={0.15} />
             </div>
             <div className="grid lg:grid-cols-2 gap-6 mb-8">
-              <RevenueChart />
-              <FunnelVisual />
+              <RevenueChart metrics={metrics} />
+              <FunnelVisual metrics={metrics} />
             </div>
             <div className="grid lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2"><FanCRM /></div>
+              <div className="lg:col-span-2"><FanCRM metrics={metrics} /></div>
               <div className="space-y-4">
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="bg-card/50 border border-border/30 rounded-2xl p-6">
                   <h3 className="font-heading font-bold text-base mb-4">Azioni Rapide</h3>
@@ -124,19 +139,24 @@ export default function Dashboard() {
             </div>
           </>
         ) : activeTab === "analytics" ? (
-          <AnalyticsDashboard />
+          <AnalyticsDashboard metrics={metrics} />
         ) : activeTab === "loyalty" ? (
           <LoyaltySystem />
         ) : activeTab === "subscriptions" ? (
           <SubscriptionManager />
         ) : activeTab === "publish" ? (
-          <PublishContent />
+          <PublishContent
+            onPublished={() => setPostsRefreshKey((k) => k + 1)}
+            onNavigateContent={() => setActiveTab("content")}
+          />
+        ) : activeTab === "content" ? (
+          <MyPosts refreshKey={postsRefreshKey} />
         ) : activeTab === "verification" ? (
           <VerificationPanel />
         ) : activeTab === "wallet" ? (
           <CreatorWallet user={user} />
         ) : activeTab === "settings" ? (
-          <SettingsPanel />
+          <SettingsPanel returnOrderId={billingReturnOrder} />
         ) : (
           <SchedulerCalendar />
         )}

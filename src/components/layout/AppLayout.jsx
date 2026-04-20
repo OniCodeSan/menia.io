@@ -1,17 +1,27 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import Navbar from "./Navbar";
 import BottomNav from "./BottomNav";
 import Footer from "./Footer";
 
 export default function AppLayout() {
+  const location = useLocation();
+  const isFeed = location.pathname === "/feed";
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <Navbar />
-      <main className="pt-16 pb-20 md:pb-0 flex-1">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-lg focus:text-sm focus:font-semibold">
+        Salta al contenuto
+      </a>
+      {isFeed ? (
+        <div className="hidden md:block"><Navbar /></div>
+      ) : (
+        <Navbar />
+      )}
+      <main id="main-content" className={`${isFeed ? "pb-0 md:pt-16" : "pt-16 pb-20 md:pb-0"} flex-1`}>
         <Outlet />
       </main>
-      <Footer />
-      <BottomNav />
+      {!isFeed && <Footer />}
+      <BottomNav feedMode={isFeed} />
     </div>
   );
 }

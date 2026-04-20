@@ -17,15 +17,47 @@ const read = (k) => {
 const write = (k, v) => localStorage.setItem(k, JSON.stringify(v));
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random());
 
+const NEW_CREATOR_WINDOW_MS = 30 * 24 * 60 * 60 * 1000; // 30 giorni
+
 const supabaseImpl = {
   async listCreatorScores(limit = 100) {
-    const { data, error } = await supabase
-      .from("creator_scores")
-      .select("*")
-      .order("global_conversion_rate", { ascending: false })
+    // Fonte primaria: profiles (un creator reale non deve dipendere da
+    // una riga in creator_scores, che viene popolata solo dal job di ranking).
+    const { data: profiles, error: pErr } = await supabase
+      .from("profiles")
+      .select("id, full_name, handle, avatar_url, cover_url, bio, created_at")
+      .eq("role", "creator")
       .limit(limit);
-    if (error) { console.warn("[feedData] listCreatorScores", error.message); return []; }
-    return data || [];
+    if (pErr) { console.warn("[feedData] listCreators profiles", pErr.message); return []; }
+
+    // Enrichment best-effort: se creator_scores ha dati, li uniamo.
+    const { data: scores } = await supabase.from("creator_scores").select("*");
+    const scoreMap = new Map((scores || []).map((s) => [s.creator_id, s]));
+
+    const now = Date.now();
+    return (profiles || []).map((p) => {
+      const s = scoreMap.get(p.id) || {};
+      const payload = s.payload || {};
+      const createdMs = p.created_at ? new Date(p.created_at).getTime() : now;
+      return {
+        creator_id: p.id,
+        creator_name: p.full_name || p.handle || "Creator",
+        creator_handle: p.handle,
+        avatar_url: p.avatar_url,
+        cover_url: p.cover_url || null,
+        bio: p.bio,
+        tags: payload.tags || [],
+        global_conversion_rate: s.global_conversion_rate ?? 0,
+        global_avg_spend: payload.global_avg_spend ?? 0,
+        content_freshness_score: payload.content_freshness_score ?? 0,
+        is_new_creator: (now - createdMs) < NEW_CREATOR_WINDOW_MS,
+        is_live: payload.is_live ?? false,
+        live_viewers: payload.live_viewers ?? 0,
+        boost_active: payload.boost_active ?? false,
+        boost_multiplier: payload.boost_multiplier ?? 1,
+        onboarding_boost: payload.onboarding_boost ?? false,
+      };
+    });
   },
 
   async getUserProfile(userId, email) {

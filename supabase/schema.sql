@@ -24,7 +24,9 @@ create table if not exists public.profiles (
   avatar_url text,
   cover_url text,
   role text not null default 'fan' check (role in ('fan','creator','admin')),
+  plan text not null default 'free',
   onboarding_complete boolean not null default false,
+  notification_prefs jsonb default '{}',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

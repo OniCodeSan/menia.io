@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Upload, FileText, Video, ImageIcon, Lock, Globe, Users, CheckCircle2, Loader2 } from "lucide-react";
+import { Upload, FileText, Video, ImageIcon, Lock, Globe, Users, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
 import { storageService } from "@/lib/storage";
+import { postsService } from "@/lib/posts";
+import { useAuth } from "@/lib/AuthContext";
+import { canCreatorUse } from "@/lib/plans";
 import MediaUploader from "./MediaUploader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,9 +22,11 @@ const ACCESS_LEVELS = [
   { id: "premium", label: "Premium", desc: "Piano premium richiesto", icon: Lock },
 ];
 
-export default function PublishContent() {
+export default function PublishContent({ onPublished, onNavigateContent }) {
+  const { user } = useAuth();
+  const canPremium = canCreatorUse("publish_premium_content", user?.plan);
   const [contentType, setContentType] = useState("post");
-  const [access, setAccess] = useState("subscribers");
+  const [access, setAccess] = useState("public");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [file, setFile] = useState(null);
@@ -29,6 +34,7 @@ export default function PublishContent() {
   const [price, setPrice] = useState("");
   const [publishing, setPublishing] = useState(false);
   const [published, setPublished] = useState(false);
+  const [error, setError] = useState("");
 
   const handleFileReady = (original, compressed) => {
     setFile(original);
@@ -37,13 +43,29 @@ export default function PublishContent() {
 
   const handlePublish = async () => {
     if (!title.trim()) return;
+    if (access === "premium" && (isNaN(Number(price)) || Number(price) <= 0)) return;
+    setError("");
     setPublishing(true);
     try {
+      let media_url = null;
+      let media_path = null;
       if (fileReady) {
-        await storageService.upload(fileReady, { folder: contentType });
+        const uploaded = await storageService.upload(fileReady, contentType);
+        media_url = uploaded.url;
+        media_path = uploaded.path;
       }
+      await postsService.create({
+        type: contentType,
+        access,
+        title,
+        description,
+        media_url,
+        media_path,
+        price: access === "premium" ? price : null,
+      });
       setPublishing(false);
       setPublished(true);
+      onPublished?.();
       setTimeout(() => {
         setPublished(false);
         setTitle("");
@@ -51,8 +73,9 @@ export default function PublishContent() {
         setFile(null);
         setFileReady(null);
         setPrice("");
-      }, 2500);
+      }, 2000);
     } catch (err) {
+      setError(err.message || "Errore durante la pubblicazione");
       setPublishing(false);
     }
   };
@@ -69,6 +92,15 @@ export default function PublishContent() {
         </div>
         <h3 className="font-heading font-bold text-xl">Contenuto pubblicato!</h3>
         <p className="text-sm text-muted-foreground">Il tuo contenuto è ora disponibile per i fan</p>
+        {onNavigateContent && (
+          <Button
+            onClick={onNavigateContent}
+            variant="outline"
+            className="mt-2 h-10 text-sm"
+          >
+            Vedi i tuoi contenuti
+          </Button>
+        )}
       </motion.div>
     );
   }
@@ -132,11 +164,15 @@ export default function PublishContent() {
       <div className="bg-card/50 border border-border/30 rounded-2xl p-5 space-y-4">
         <p className="text-sm font-semibold">Accesso</p>
         <div className="space-y-2">
-          {ACCESS_LEVELS.map(({ id, label, desc, icon: Icon }) => (
+          {ACCESS_LEVELS.map(({ id, label, desc, icon: Icon }) => {
+            const locked = (id === "premium" || id === "subscribers") && !canPremium;
+            return (
             <button
               key={id}
-              onClick={() => setAccess(id)}
+              onClick={() => !locked && setAccess(id)}
+              disabled={locked}
               className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
+                locked ? "opacity-50 cursor-not-allowed border-border/20" :
                 access === id ? "border-primary/40 bg-primary/5" : "border-border/30 hover:border-border/60"
               }`}
             >
@@ -144,12 +180,13 @@ export default function PublishContent() {
                 <Icon className={`w-4 h-4 ${access === id ? "text-primary" : "text-muted-foreground"}`} />
               </div>
               <div>
-                <p className="text-sm font-medium">{label}</p>
-                <p className="text-xs text-muted-foreground">{desc}</p>
+                <p className="text-sm font-medium">{label}{locked ? " 🔒" : ""}</p>
+                <p className="text-xs text-muted-foreground">{locked ? "Richiede piano Start o Pro" : desc}</p>
               </div>
               <div className={`ml-auto w-4 h-4 rounded-full border-2 ${access === id ? "border-primary bg-primary" : "border-border"}`} />
             </button>
-          ))}
+            );
+          })}
         </div>
 
         {access === "premium" && (
@@ -157,6 +194,8 @@ export default function PublishContent() {
             <Label className="text-xs text-muted-foreground">Prezzo sblocco singolo (€)</Label>
             <Input
               type="number"
+              min="0.01"
+              step="0.01"
               value={price}
               onChange={e => setPrice(e.target.value)}
               placeholder="Es. 4.99"
@@ -165,6 +204,13 @@ export default function PublishContent() {
           </div>
         )}
       </div>
+
+      {error && (
+        <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-destructive/10 border border-destructive/20 text-xs text-destructive">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{error}</span>
+        </div>
+      )}
 
       <Button
         onClick={handlePublish}

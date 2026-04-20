@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Radio, Loader2, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { walletService } from "@/lib/wallet";
+import { processLiveAccess } from "@/lib/monetization";
 import { useAuth } from "@/lib/AuthContext";
 
 const DEFAULT_PRICE = 30;
@@ -18,7 +18,7 @@ export default function LiveAccessButton({ creatorName, liveId, price = DEFAULT_
     setError("");
     setLoading(true);
     try {
-      await walletService.purchaseLiveAccess(user.id, liveId, price, `Accesso live di ${creatorName}`);
+      await processLiveAccess(user.id, liveId, price);
       setGranted(true);
       onGranted?.();
     } catch (e) {

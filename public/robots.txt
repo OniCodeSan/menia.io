@@ -1,0 +1,16 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /admin-console
+Disallow: /messages
+Disallow: /go-live
+Disallow: /fan-dashboard
+Disallow: /token-wallet
+Disallow: /checkout
+Disallow: /creator-onboarding
+Disallow: /creator-portal
+Disallow: /fan-portal
+Disallow: /forgot-password
+Disallow: /reset-password
+
+Sitemap: https://tokaro.fans/sitemap.xml

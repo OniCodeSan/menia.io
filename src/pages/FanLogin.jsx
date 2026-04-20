@@ -24,7 +24,9 @@ export default function FanLogin() {
 
   useEffect(() => {
     if (!user) return;
-    if (user.role === "creator" || user.role === "admin") {
+    if (user.role === "admin") {
+      navigate("/admin-console", { replace: true });
+    } else if (user.role === "creator") {
       navigate("/dashboard", { replace: true });
     } else {
       navigate("/fan-dashboard", { replace: true });
@@ -38,6 +40,9 @@ export default function FanLogin() {
 
   const switchMode = (next) => {
     setError("");
+    setEmail("");
+    setPassword("");
+    setFullName("");
     const params = new URLSearchParams(searchParams);
     if (next === "register") params.set("mode", "register");
     else params.delete("mode");
@@ -49,12 +54,19 @@ export default function FanLogin() {
     setError("");
     setSubmitting(true);
     try {
+      let u;
       if (mode === "register") {
-        await register({ email, password, role: "fan", full_name: fullName });
+        u = await register({ email, password, role: "fan", full_name: fullName });
       } else {
-        await login({ email, password });
+        u = await login({ email, password });
       }
-      navigate("/fan-dashboard", { replace: true });
+      if (u?.role === "admin") {
+        navigate("/admin-console", { replace: true });
+      } else if (u?.role === "creator") {
+        navigate("/dashboard", { replace: true });
+      } else {
+        navigate("/fan-dashboard", { replace: true });
+      }
     } catch (err) {
       setError(err.message || "Errore inatteso");
       setSubmitting(false);
@@ -153,11 +165,16 @@ export default function FanLogin() {
           </div>
 
           {mode === "login" && (
-            <div className="flex items-center gap-2">
-              <Checkbox id="fan-remember" checked={remember} onCheckedChange={setRemember} />
-              <Label htmlFor="fan-remember" className="text-xs text-muted-foreground cursor-pointer">
-                Resta connesso
-              </Label>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Checkbox id="fan-remember" checked={remember} onCheckedChange={setRemember} />
+                <Label htmlFor="fan-remember" className="text-xs text-muted-foreground cursor-pointer">
+                  Resta connesso
+                </Label>
+              </div>
+              <Link to="/forgot-password" className="text-xs text-accent hover:underline">
+                Password dimenticata?
+              </Link>
             </div>
           )}
 

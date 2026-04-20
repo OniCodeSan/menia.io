@@ -1,76 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, TrendingUp, Flame, Star, X, SlidersHorizontal, Users, Play } from "lucide-react";
+import { Search, TrendingUp, Flame, Star, X, SlidersHorizontal, Users, Play, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-
-const ALL_CREATORS = [
-  {
-    name: "Sara Rossi", handle: "@sararossi", category: "Fitness",
-    bio: "Personal trainer certificata. Allenamenti HIIT, yoga e nutrizione sportiva.",
-    tags: ["hiit", "yoga", "dieta", "workout", "benessere"],
-    fans: 12400, posts: 234, rating: 4.9, isLive: true, trending: true,
-    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=500&fit=crop&crop=face",
-    price: "€9.99",
-  },
-  {
-    name: "Marco Bianchi", handle: "@marcob", category: "Fotografia",
-    bio: "Fotografo professionista. Tutorial, lightroom, street e paesaggio.",
-    tags: ["fotografia", "lightroom", "tutorial", "paesaggio", "ritratto"],
-    fans: 8200, posts: 156, rating: 4.7, isLive: false, trending: true,
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=500&fit=crop&crop=face",
-    price: "€6.99",
-  },
-  {
-    name: "Elena Conti", handle: "@elenaconti", category: "Musica",
-    bio: "Cantante e chitarrista. Lezioni online, cover e composizione originale.",
-    tags: ["musica", "chitarra", "canto", "lezioni", "composizione"],
-    fans: 15100, posts: 312, rating: 5.0, isLive: true, trending: true,
-    image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&h=500&fit=crop&crop=face",
-    price: "€12.99",
-  },
-  {
-    name: "Luca Ferrari", handle: "@lucaf", category: "Gaming",
-    bio: "Pro gamer e streamer. Guide, speedrun, tornei e community gaming.",
-    tags: ["gaming", "fps", "rpg", "streaming", "esports"],
-    fans: 6700, posts: 89, rating: 4.5, isLive: false, trending: false,
-    image: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&h=500&fit=crop&crop=face",
-    price: "€4.99",
-  },
-  {
-    name: "Giulia Moretti", handle: "@giuliam", category: "Arte",
-    bio: "Illustratrice digitale e pittrice. Procreate, acquerello e concept art.",
-    tags: ["arte", "illustrazione", "procreate", "acquerello", "design"],
-    fans: 9800, posts: 201, rating: 4.8, isLive: false, trending: true,
-    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=500&fit=crop&crop=face",
-    price: "€7.99",
-  },
-  {
-    name: "Andrea Ricci", handle: "@andrear", category: "Tech",
-    bio: "Sviluppatore full-stack. Coding, startup, AI e produttività digitale.",
-    tags: ["coding", "ai", "startup", "javascript", "produttività"],
-    fans: 11300, posts: 178, rating: 4.6, isLive: false, trending: false,
-    image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=500&fit=crop&crop=face",
-    price: "€9.99",
-  },
-  {
-    name: "Chiara Neri", handle: "@chiaraneri", category: "Cucina",
-    bio: "Chef casalinga. Ricette veloci, sani e sfiziosi. Cucina italiana autentica.",
-    tags: ["cucina", "ricette", "italiana", "dolci", "vegano"],
-    fans: 7400, posts: 145, rating: 4.7, isLive: false, trending: false,
-    image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=500&fit=crop&crop=face",
-    price: "€5.99",
-  },
-  {
-    name: "Roberto Esposito", handle: "@roberto.v", category: "Viaggi",
-    bio: "Viaggiatore seriale. Guida ai luoghi nascosti d'Europa e consigli per budget travel.",
-    tags: ["viaggi", "europa", "budget", "avventura", "fotografia"],
-    fans: 13600, posts: 267, rating: 4.9, isLive: true, trending: true,
-    image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=500&fit=crop&crop=face",
-    price: "€8.99",
-  },
-];
+import { supabase, hasSupabase } from "@/lib/supabase";
+import SEO from "@/components/shared/SEO";
 
 const CATEGORIES = ["Tutti", "Fitness", "Fotografia", "Musica", "Gaming", "Arte", "Tech", "Cucina", "Viaggi"];
 const SORT_OPTIONS = [
@@ -82,11 +17,11 @@ const SORT_OPTIONS = [
 const POPULAR_TAGS = ["hiit", "yoga", "tutorial", "musica", "coding", "ai", "ricette", "viaggi", "arte", "gaming"];
 
 function highlight(text, query) {
-  if (!query) return text;
-  const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi");
-  const parts = text.split(regex);
+  if (!query || !text) return text;
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const parts = text.split(new RegExp(`(${escaped})`, "gi"));
   return parts.map((part, i) =>
-    regex.test(part)
+    part.toLowerCase() === query.toLowerCase()
       ? <mark key={i} className="bg-primary/30 text-foreground rounded px-0.5">{part}</mark>
       : part
   );
@@ -99,23 +34,56 @@ export default function Explore() {
   const [activeTags, setActiveTags] = useState([]);
   const [onlyLive, setOnlyLive] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [allCreators, setAllCreators] = useState([]);
+  const [loadingReal, setLoadingReal] = useState(true);
+
+  useEffect(() => {
+    if (!hasSupabase) { setLoadingReal(false); return; }
+    let cancelled = false;
+    (async () => {
+      const { data: profiles, error } = await supabase
+        .from("profiles")
+        .select("id, full_name, handle, avatar_url, bio, role")
+        .eq("role", "creator");
+      if (cancelled) return;
+      if (error) console.warn("[Explore] fetch creators:", error.message);
+      setAllCreators((profiles || []).map((p) => ({
+        id: p.id,
+        handle: p.handle || p.id.slice(0, 8),
+        name: p.full_name || "Creator",
+        category: "",
+        bio: p.bio || "",
+        tags: [],
+        fans: 0,
+        posts: 0,
+        rating: 0,
+        isLive: false,
+        trending: false,
+        image: p.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.full_name || "C")}&background=7c3aed&color=fff`,
+        priceTokens: 100,
+        isReal: true,
+      })));
+      setLoadingReal(false);
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const toggleTag = (tag) => {
     setActiveTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
   };
 
   const results = useMemo(() => {
-    let list = [...ALL_CREATORS];
+    let list = [...allCreators];
 
     // Keyword search — name, handle, bio, tags, category
     if (query.trim()) {
       const q = query.toLowerCase();
       list = list.filter(c =>
-        c.name.toLowerCase().includes(q) ||
-        c.handle.toLowerCase().includes(q) ||
-        c.bio.toLowerCase().includes(q) ||
-        c.category.toLowerCase().includes(q) ||
-        c.tags.some(t => t.includes(q))
+        (c.name || "").toLowerCase().includes(q) ||
+        `@${c.handle || ""}`.toLowerCase().includes(q) ||
+        (c.bio || "").toLowerCase().includes(q) ||
+        (c.category || "").toLowerCase().includes(q) ||
+        (c.tags || []).some(t => t.includes(q))
       );
       // Boost exact name/handle matches to top
       list.sort((a, b) => {
@@ -126,10 +94,10 @@ export default function Explore() {
     }
 
     // Category filter
-    if (category !== "Tutti") list = list.filter(c => c.category === category);
+    if (category !== "Tutti") list = list.filter(c => (c.category || "") === category);
 
     // Tag filter
-    if (activeTags.length > 0) list = list.filter(c => activeTags.every(t => c.tags.includes(t)));
+    if (activeTags.length > 0) list = list.filter(c => activeTags.every(t => (c.tags || []).includes(t)));
 
     // Live filter
     if (onlyLive) list = list.filter(c => c.isLive);
@@ -143,12 +111,13 @@ export default function Explore() {
     }
 
     return list;
-  }, [query, category, sort, activeTags, onlyLive]);
+  }, [query, category, sort, activeTags, onlyLive, allCreators]);
 
   const hasActiveFilters = category !== "Tutti" || activeTags.length > 0 || onlyLive;
 
   return (
     <div className="min-h-screen">
+      <SEO title="Esplora creator" description="Scopri i migliori creator su Tokaro.fans — fitness, musica, arte, cucina e molto altro." url="/explore" />
       {/* Header */}
       <div className="border-b border-border/30 bg-card/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -336,7 +305,7 @@ export default function Explore() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
               >
-                <Link to="/creator" className="group block">
+                <Link to={`/creator/${creator.handle}`} className="group block">
                   <div className="relative rounded-2xl overflow-hidden border border-border/30 hover:border-primary/40 bg-card/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5">
                     {/* Image */}
                     <div className="relative h-44 overflow-hidden">
@@ -359,7 +328,7 @@ export default function Explore() {
                         </div>
                       )}
                       <div className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm text-xs font-bold px-2 py-0.5 rounded-full">
-                        {creator.price}
+                        {creator.priceTokens} T/mese
                       </div>
                     </div>
 
@@ -375,7 +344,7 @@ export default function Explore() {
                           <h3 className="font-heading font-bold text-sm truncate">
                             {highlight(creator.name, query)}
                           </h3>
-                          <p className="text-[11px] text-muted-foreground">{creator.handle}</p>
+                          <p className="text-[11px] text-muted-foreground">@{creator.handle}</p>
                         </div>
                       </div>
 

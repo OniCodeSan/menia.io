@@ -10,12 +10,12 @@ export default function HeroSection() {
   const h = t.hero;
 
   return (
-    <section className="relative min-h-[90vh] flex items-center overflow-hidden">
+    <section className="relative min-h-[80vh] sm:min-h-[90vh] flex items-center overflow-x-hidden overflow-y-visible">
       {/* Background effects */}
-      <div className="absolute inset-0">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse-glow" />
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-accent/15 rounded-full blur-3xl animate-pulse-glow" style={{ animationDelay: "1.5s" }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl" />
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-1/4 left-1/4 w-48 sm:w-96 h-48 sm:h-96 bg-primary/20 rounded-full blur-3xl animate-pulse-glow" />
+        <div className="absolute bottom-1/4 right-1/4 w-40 sm:w-80 h-40 sm:h-80 bg-accent/15 rounded-full blur-3xl animate-pulse-glow" style={{ animationDelay: "1.5s" }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 sm:w-[600px] h-72 sm:h-[600px] bg-primary/5 rounded-full blur-3xl" />
       </div>
 
       {/* Grid overlay */}
@@ -33,7 +33,7 @@ export default function HeroSection() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.2 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/30 bg-primary/10 mb-8"
+              className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full border border-primary/30 bg-primary/10 mb-8 max-w-full"
             >
               <Sparkles className="w-4 h-4 text-primary" />
               <span className="text-sm font-medium text-primary">{h.badge}</span>
@@ -51,17 +51,13 @@ export default function HeroSection() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link to="/creator-onboarding">
-                <Button size="lg" className="bg-primary hover:bg-primary/90 glow-primary font-semibold text-base px-8 h-12 w-full sm:w-auto group">
-                  {h.cta1}
-                  <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                </Button>
+              <Link to="/creator-onboarding" className="inline-flex items-center justify-center bg-primary hover:bg-primary/90 glow-primary font-semibold text-base px-8 h-12 rounded-md text-primary-foreground w-full sm:w-auto group">
+                {h.cta1}
+                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <Link to="/explore">
-                <Button size="lg" variant="outline" className="border-border/50 hover:bg-secondary font-medium text-base px-8 h-12 w-full sm:w-auto group">
-                  <Play className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
-                  {h.cta2}
-                </Button>
+              <Link to="/explore" className="inline-flex items-center justify-center border border-border/50 hover:bg-secondary font-medium text-base px-8 h-12 rounded-md w-full sm:w-auto group">
+                <Play className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
+                {h.cta2}
               </Link>
             </div>
 
@@ -94,7 +90,7 @@ export default function HeroSection() {
             </motion.div>
           </motion.div>
 
-          {/* Visual */}
+          {/* Visual — desktop: full image + floating card */}
           <motion.div
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
@@ -105,21 +101,20 @@ export default function HeroSection() {
               <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 to-accent/20 rounded-3xl blur-2xl" />
               <div className="relative rounded-2xl overflow-hidden border border-border/50">
                 <img
-                  src="https://media.base44.com/images/public/69d7e617e5741f4884bb0c49/2866ea976_generated_image.png"
-                  alt="Creator"
+                  src="/hero-creator.jpg"
+                  alt="Creator dashboard"
                   className="w-full h-[500px] object-cover"
+                  loading="lazy"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
-                
+
                 {/* Floating card */}
-                <div
-                  className="absolute bottom-8 left-6 right-6 glass rounded-xl p-4 border border-border/50"
-                >
+                <div className="absolute bottom-8 left-6 right-6 glass rounded-xl p-4 border border-border/50">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
                       <img
                         src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face"
-                        alt=""
+                        alt="Sara Rossi"
                         className="w-10 h-10 rounded-full object-cover"
                       />
                       <div>
@@ -146,6 +141,48 @@ export default function HeroSection() {
                       <p className="text-sm font-bold">35%</p>
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Visual — mobile: compact social proof card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="lg:hidden"
+          >
+            <div className="glass rounded-xl p-4 border border-border/50">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <img
+                    src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face"
+                    alt="Sara Rossi"
+                    className="w-9 h-9 rounded-full object-cover"
+                  />
+                  <div>
+                    <p className="text-sm font-semibold">Sara Rossi</p>
+                    <p className="text-[11px] text-muted-foreground">@sararossi</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-base font-bold text-primary">84.000 <TToken /></p>
+                  <p className="text-[10px] text-muted-foreground">questo mese</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <div className="flex-1 bg-primary/20 rounded-lg p-2 text-center">
+                  <p className="text-[10px] text-muted-foreground">Fan</p>
+                  <p className="text-sm font-bold">2.4K</p>
+                </div>
+                <div className="flex-1 bg-accent/20 rounded-lg p-2 text-center">
+                  <p className="text-[10px] text-muted-foreground">Premium</p>
+                  <p className="text-sm font-bold">840</p>
+                </div>
+                <div className="flex-1 bg-chart-3/20 rounded-lg p-2 text-center">
+                  <p className="text-[10px] text-muted-foreground">Conv.</p>
+                  <p className="text-sm font-bold">35%</p>
                 </div>
               </div>
             </div>

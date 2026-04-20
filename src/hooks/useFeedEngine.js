@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { feedData } from "@/lib/feedData";
+import { postsService } from "@/lib/posts";
 import {
   buildForYouFeed,
   buildHighSpendersFeed,
@@ -9,11 +10,11 @@ import {
 } from "@/lib/feedScoring";
 
 export function useFeedEngine() {
-  const [tab, setTab] = useState("foryou");
+  const [tab, setTab] = useState("timeline");
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState(null);
   const [userSegment, setUserSegment] = useState("lurker");
-  const [feeds, setFeeds] = useState({ foryou: [], highspenders: [], discovery: [], live: [] });
+  const [feeds, setFeeds] = useState({ timeline: [], foryou: [], highspenders: [], discovery: [], live: [] });
   const viewTimers = useRef({});
   const cachedUser = useRef(undefined);
 
@@ -52,8 +53,11 @@ export function useFeedEngine() {
         setUserSegment(seg);
       }
 
+      const timelinePosts = await postsService.listPublic({ limit: 50 });
+
       setUserProfile(profile);
       setFeeds({
+        timeline: timelinePosts,
         foryou: buildForYouFeed(creators, profile, behaviors),
         highspenders: buildHighSpendersFeed(creators, profile, behaviors),
         discovery: buildDiscoveryFeed(creators, profile, behaviors),

@@ -64,7 +64,7 @@ export default function FanPortal() {
             <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center">
               <Heart className="w-5 h-5 text-accent" />
             </div>
-            <span className="font-heading text-2xl font-bold">Unlockr</span>
+            <span className="font-heading text-2xl font-bold">Tokaro.fans</span>
           </div>
           <h1 className="font-heading text-3xl font-bold mb-2">Area Fan</h1>
           <p className="text-muted-foreground text-sm">
@@ -141,7 +141,7 @@ export default function FanPortal() {
         </div>
 
         <p className="text-center text-xs text-muted-foreground mt-6">
-          © 2026 Unlockr · Tutti i diritti riservati
+          © 2026 Tokaro.fans · Tutti i diritti riservati
         </p>
       </motion.div>
     </div>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { Crown, Mail, Lock, ArrowRight, Eye, EyeOff, User, AlertCircle } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -10,8 +10,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 export default function CreatorLogin() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, login, register } = useAuth();
+  const fromPath = location.state?.from;
 
   const [mode, setMode] = useState(searchParams.get("mode") === "register" ? "register" : "login");
   const [email, setEmail] = useState("");
@@ -24,12 +26,14 @@ export default function CreatorLogin() {
 
   useEffect(() => {
     if (!user) return;
-    if (user.role === "creator" || user.role === "admin") {
+    if (user.role === "admin") {
+      navigate(fromPath || "/admin-console", { replace: true });
+    } else if (user.role === "creator") {
       navigate(user.onboarding_complete ? "/dashboard" : "/creator-onboarding", { replace: true });
     } else if (user.role === "fan") {
       navigate("/fan-dashboard", { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, navigate, fromPath]);
 
   useEffect(() => {
     const next = searchParams.get("mode") === "register" ? "register" : "login";
@@ -38,6 +42,9 @@ export default function CreatorLogin() {
 
   const switchMode = (next) => {
     setError("");
+    setEmail("");
+    setPassword("");
+    setFullName("");
     const params = new URLSearchParams(searchParams);
     if (next === "register") params.set("mode", "register");
     else params.delete("mode");
@@ -57,6 +64,10 @@ export default function CreatorLogin() {
         if (u.role === "fan") {
           setError("Questo account è registrato come fan. Usa l'area fan per accedere.");
           setSubmitting(false);
+          return;
+        }
+        if (u.role === "admin") {
+          navigate(fromPath || "/admin-console", { replace: true });
           return;
         }
         navigate(u.onboarding_complete ? "/dashboard" : "/creator-onboarding", { replace: true });
@@ -159,11 +170,16 @@ export default function CreatorLogin() {
           </div>
 
           {mode === "login" && (
-            <div className="flex items-center gap-2">
-              <Checkbox id="creator-remember" checked={remember} onCheckedChange={setRemember} />
-              <Label htmlFor="creator-remember" className="text-xs text-muted-foreground cursor-pointer">
-                Resta connesso
-              </Label>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Checkbox id="creator-remember" checked={remember} onCheckedChange={setRemember} />
+                <Label htmlFor="creator-remember" className="text-xs text-muted-foreground cursor-pointer">
+                  Resta connesso
+                </Label>
+              </div>
+              <Link to="/forgot-password" className="text-xs text-accent hover:underline">
+                Password dimenticata?
+              </Link>
             </div>
           )}
 

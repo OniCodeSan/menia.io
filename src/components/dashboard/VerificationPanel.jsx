@@ -44,6 +44,7 @@ function StepIndicator({ currentStep }) {
 }
 
 function IdentityStep({ data, onChange, onNext }) {
+  const [touched, setTouched] = useState(false);
   const isValid = data.firstName && data.lastName && data.birthDate;
 
   const calcAge = (dateStr) => {
@@ -69,8 +70,9 @@ function IdentityStep({ data, onChange, onNext }) {
             value={data.firstName}
             onChange={e => onChange({ ...data, firstName: e.target.value })}
             placeholder="Es. Giulia"
-            className="bg-secondary/30 border-border/30 h-10"
+            className={`bg-secondary/30 h-10 ${touched && !data.firstName ? "border-destructive" : "border-border/30"}`}
           />
+          {touched && !data.firstName && <p className="text-[11px] text-destructive">Campo obbligatorio</p>}
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Cognome *</Label>
@@ -78,8 +80,9 @@ function IdentityStep({ data, onChange, onNext }) {
             value={data.lastName}
             onChange={e => onChange({ ...data, lastName: e.target.value })}
             placeholder="Es. Rossi"
-            className="bg-secondary/30 border-border/30 h-10"
+            className={`bg-secondary/30 h-10 ${touched && !data.lastName ? "border-destructive" : "border-border/30"}`}
           />
+          {touched && !data.lastName && <p className="text-[11px] text-destructive">Campo obbligatorio</p>}
         </div>
       </div>
 
@@ -89,8 +92,9 @@ function IdentityStep({ data, onChange, onNext }) {
           type="date"
           value={data.birthDate}
           onChange={e => onChange({ ...data, birthDate: e.target.value })}
-          className="bg-secondary/30 border-border/30 h-10 max-w-xs"
+          className={`bg-secondary/30 h-10 max-w-xs ${touched && !data.birthDate ? "border-destructive" : "border-border/30"}`}
         />
+        {touched && !data.birthDate && <p className="text-[11px] text-destructive">Campo obbligatorio</p>}
         {age !== null && (
           <div className={`flex items-center gap-1.5 text-xs mt-1 ${underage ? "text-destructive" : "text-chart-3"}`}>
             {underage ? <AlertCircle className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
@@ -116,15 +120,14 @@ function IdentityStep({ data, onChange, onNext }) {
         <div className="flex items-start gap-3 p-4 bg-destructive/10 border border-destructive/30 rounded-xl">
           <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
           <p className="text-sm text-destructive">
-            Non puoi iscriverti come creator su Unlockr se non hai ancora compiuto 18 anni.
+            Non puoi iscriverti come creator su Tokaro.fans se non hai ancora compiuto 18 anni.
           </p>
         </div>
       )}
 
       <Button
-        onClick={onNext}
-        disabled={!isValid || underage}
-        className="w-full h-10 bg-primary hover:bg-primary/90 font-semibold"
+        onClick={() => { setTouched(true); if (isValid && !underage) onNext(); }}
+        className={`w-full h-10 font-semibold ${isValid && !underage ? "bg-primary hover:bg-primary/90" : "bg-muted text-muted-foreground"}`}
       >
         Continua
       </Button>

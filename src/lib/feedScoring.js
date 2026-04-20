@@ -1,5 +1,5 @@
 /**
- * Feed Scoring Engine — Unlockr
+ * Feed Scoring Engine — Tokaro.fans
  * Ottimizza: "quanto spende questo utente nei prossimi 10 minuti"
  */
 

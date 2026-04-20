@@ -1,65 +1,123 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useId } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Lock, Crown, ArrowLeft } from "lucide-react";
+import { Send, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import PaidMessageBanner from "./PaidMessageBanner";
-
-const myAvatar = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face";
-
-const initialMessages = {
-  1: [
-    { id: 1, from: "them", text: "Ciao! Ho visto i tuoi contenuti e sono rimasto impressionato!", time: "10:30" },
-    { id: 2, from: "me", text: "Grazie mille! Sono contenta che ti piaccia 😊", time: "10:31" },
-    { id: 3, from: "them", text: "Posso avere accesso al programma completo?", time: "10:32" },
-  ],
-  2: [
-    { id: 1, from: "them", text: "Ho iniziato il programma ieri!", time: "09:00" },
-    { id: 2, from: "me", text: "Ottimo! Come stai trovando i primi allenamenti?", time: "09:05" },
-    { id: 3, from: "them", text: "Grazie mille per il contenuto! 🔥", time: "09:45" },
-  ],
-  3: [{ id: 1, from: "them", text: "", time: "08:00", paid: true }],
-  4: [
-    { id: 1, from: "them", text: "Sei la mia creator preferita! 💪", time: "ieri" },
-    { id: 2, from: "me", text: "Grazie, questo mi motiva tanto! 🙏", time: "ieri" },
-    { id: 3, from: "them", text: "Quando pubblichi il prossimo video?", time: "14:20" },
-  ],
-  5: [{ id: 1, from: "them", text: "", time: "12:00", paid: true }],
-  6: [
-    { id: 1, from: "them", text: "Sei la mia creator preferita!", time: "ieri" },
-    { id: 2, from: "me", text: "Che bella cosa! ❤️", time: "ieri" },
-  ],
-};
-
-const statusColors = {
-  Premium: "bg-chart-3/20 text-chart-3 border-chart-3/30",
-  Abbonato: "bg-primary/20 text-primary border-primary/30",
-  Free: "bg-secondary text-muted-foreground border-border/30",
-};
+import { supabase, hasSupabase } from "@/lib/supabase";
+import { useAuth } from "@/lib/AuthContext";
+import { processPaidMessage } from "@/lib/monetization";
 
 export default function ChatWindow({ conversation, onBack }) {
-  const [messages, setMessages] = useState(initialMessages[conversation.id] || []);
+  const { user } = useAuth();
+  const instanceId = useId();
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
-  const [unlockedPaid, setUnlockedPaid] = useState({});
-  const [paidPrice, setPaidPrice] = useState("4.99");
-  const [showPaidSetting, setShowPaidSetting] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [loading, setLoading] = useState(true);
   const bottomRef = useRef(null);
+  const partnerId = conversation.id;
 
   useEffect(() => {
-    setMessages(initialMessages[conversation.id] || []);
-    setUnlockedPaid({});
-  }, [conversation.id]);
+    if (!hasSupabase || !user || !partnerId) return;
+    setLoading(true);
+    setMessages([]);
+
+    supabase
+      .from("direct_messages")
+      .select("*")
+      .or(`and(sender_id.eq.${user.id},receiver_id.eq.${partnerId}),and(sender_id.eq.${partnerId},receiver_id.eq.${user.id})`)
+      .order("created_at", { ascending: true })
+      .limit(200)
+      .then(({ data, error }) => {
+        if (error) console.warn("[ChatWindow] load messages:", error.message);
+        setMessages(data || []);
+        setLoading(false);
+      });
+
+    supabase
+      .from("direct_messages")
+      .update({ read: true })
+      .eq("sender_id", partnerId)
+      .eq("receiver_id", user.id)
+      .eq("read", false)
+      .then(({ error }) => {
+        if (error) console.warn("[ChatWindow] mark read:", error.message);
+      });
+
+    const channelName = `dm-${[user.id, partnerId].sort().join("-")}-${instanceId.replace(/:/g, "")}`;
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "direct_messages" },
+        (payload) => {
+          const msg = payload.new;
+          const isRelevant =
+            (msg.sender_id === user.id && msg.receiver_id === partnerId) ||
+            (msg.sender_id === partnerId && msg.receiver_id === user.id);
+          if (!isRelevant) return;
+
+          setMessages((prev) => {
+            const withoutOptimistic = prev.filter((m) => !m._optimistic || m.sender_id !== msg.sender_id || m.message !== msg.message);
+            return [...withoutOptimistic, msg];
+          });
+
+          if (msg.sender_id === partnerId) {
+            supabase.from("direct_messages").update({ read: true }).eq("id", msg.id).then(({ error }) => {
+              if (error) console.warn("[ChatWindow] mark read (realtime):", error.message);
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, partnerId, instanceId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const sendMessage = () => {
-    if (!input.trim()) return;
-    const newMsg = { id: Date.now(), from: "me", text: input, time: "ora" };
-    setMessages((prev) => [...prev, newMsg]);
+  const sendMessage = async () => {
+    if (!input.trim() || !user || !partnerId || !hasSupabase) return;
+    const text = input.trim();
     setInput("");
+    setSending(true);
+
+    const optimistic = {
+      id: `opt-${Date.now()}`,
+      sender_id: user.id,
+      receiver_id: partnerId,
+      message: text,
+      read: false,
+      created_at: new Date().toISOString(),
+      _optimistic: true,
+    };
+    setMessages((prev) => [...prev, optimistic]);
+
+    try {
+      let cost = 0;
+      if (conversation.role === "creator") {
+        const result = await processPaidMessage(user.id, partnerId);
+        cost = result.cost;
+      }
+
+      const { error } = await supabase.from("direct_messages").insert({
+        sender_id: user.id,
+        receiver_id: partnerId,
+        message: text,
+        cost,
+      });
+      if (error) console.error("[DM] insert error:", error.message);
+    } catch (err) {
+      console.error("[DM] send error:", err);
+      setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleKeyDown = (e) => {
@@ -69,16 +127,13 @@ export default function ChatWindow({ conversation, onBack }) {
     }
   };
 
+  const isMe = (msg) => msg.sender_id === user?.id;
+  const roleLabel = conversation.role === "creator" ? "Creator" : conversation.role === "admin" ? "Admin" : null;
+
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-border/30 bg-card/30">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onBack}
-          className="md:hidden w-8 h-8 shrink-0"
-        >
+        <Button variant="ghost" size="icon" onClick={onBack} className="md:hidden w-8 h-8 shrink-0">
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <img
@@ -89,119 +144,55 @@ export default function ChatWindow({ conversation, onBack }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <p className="text-sm font-semibold">{conversation.name}</p>
-            <Badge className={`text-[10px] ${statusColors[conversation.status]}`}>
-              {conversation.status}
-            </Badge>
+            {roleLabel && (
+              <Badge className="text-[10px] bg-primary/20 text-primary border-primary/30">{roleLabel}</Badge>
+            )}
           </div>
-          <p className="text-xs text-chart-3">Online</p>
-        </div>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowPaidSetting(!showPaidSetting)}
-            className="text-xs text-primary border border-primary/20 hover:bg-primary/10 h-7 px-2.5"
-          >
-            <Lock className="w-3 h-3 mr-1" />
-            Imposta prezzo
-          </Button>
         </div>
       </div>
 
-      {/* Paid price setting */}
-      <AnimatePresence>
-        {showPaidSetting && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden"
-          >
-            <div className="px-4 py-3 bg-primary/5 border-b border-primary/20 flex items-center gap-3">
-              <Lock className="w-4 h-4 text-primary shrink-0" />
-              <p className="text-xs text-muted-foreground flex-1">Imposta prezzo per messaggi a pagamento (€)</p>
-              <Input
-                value={paidPrice}
-                onChange={(e) => setPaidPrice(e.target.value)}
-                className="w-20 h-7 text-xs bg-secondary/50 border-border/30 text-center"
-              />
-              <Button
-                size="sm"
-                className="h-7 text-xs bg-primary hover:bg-primary/90 px-3"
-                onClick={() => setShowPaidSetting(false)}
-              >
-                Salva
-              </Button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto py-4 space-y-1">
-        {messages.map((msg) => {
-          if (msg.paid && !unlockedPaid[msg.id]) {
-            return (
-              <PaidMessageBanner
-                key={msg.id}
-                sender={conversation.name}
-                onUnlock={() => setUnlockedPaid((prev) => ({ ...prev, [msg.id]: true }))}
-              />
-            );
-          }
-
-          if (msg.paid && unlockedPaid[msg.id]) {
-            return (
-              <motion.div
-                key={msg.id}
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex items-end gap-2 px-4"
-              >
-                <img src={conversation.avatar} alt="" className="w-7 h-7 rounded-full object-cover shrink-0" />
-                <div className="bg-secondary/80 rounded-2xl rounded-bl-sm px-4 py-2.5 max-w-[75%]">
-                  <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                    <Crown className="w-3 h-3 text-chart-4" /> Messaggio sbloccato
-                  </p>
-                  <p className="text-sm">Hey! Sei disponibile per una consulenza privata? 🔥</p>
-                  <p className="text-[10px] text-muted-foreground text-right mt-1">{msg.time}</p>
-                </div>
-              </motion.div>
-            );
-          }
-
-          const isMe = msg.from === "me";
-          return (
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+          </div>
+        ) : messages.length === 0 ? (
+          <p className="text-xs text-muted-foreground text-center py-8">
+            Nessun messaggio. Inizia la conversazione!
+          </p>
+        ) : (
+          messages.map((msg) => (
             <motion.div
               key={msg.id}
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
-              className={`flex items-end gap-2 px-4 ${isMe ? "flex-row-reverse" : ""}`}
+              className={`flex items-end gap-2 px-4 ${isMe(msg) ? "flex-row-reverse" : ""}`}
             >
               <img
-                src={isMe ? myAvatar : conversation.avatar}
+                src={isMe(msg)
+                  ? (user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.full_name || "U")}&background=7c3aed&color=fff&size=100`)
+                  : conversation.avatar}
                 alt=""
                 className="w-7 h-7 rounded-full object-cover shrink-0"
               />
               <div
                 className={`rounded-2xl px-4 py-2.5 max-w-[75%] ${
-                  isMe
+                  isMe(msg)
                     ? "bg-primary text-primary-foreground rounded-br-sm"
                     : "bg-secondary/80 rounded-bl-sm"
                 }`}
               >
-                <p className="text-sm">{msg.text}</p>
-                <p className={`text-[10px] mt-1 text-right ${isMe ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
-                  {msg.time}
+                <p className="text-sm">{msg.message}</p>
+                <p className={`text-[10px] mt-1 text-right ${isMe(msg) ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
+                  {formatTime(msg.created_at)}
                 </p>
               </div>
             </motion.div>
-          );
-        })}
+          ))
+        )}
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
       <div className="px-4 py-3 border-t border-border/30 bg-card/30">
         <div className="flex items-center gap-2">
           <Input
@@ -210,10 +201,11 @@ export default function ChatWindow({ conversation, onBack }) {
             onKeyDown={handleKeyDown}
             placeholder="Scrivi un messaggio..."
             className="flex-1 bg-secondary/40 border-border/30 h-10"
+            disabled={sending}
           />
           <Button
             onClick={sendMessage}
-            disabled={!input.trim()}
+            disabled={!input.trim() || sending}
             size="icon"
             className="h-10 w-10 bg-primary hover:bg-primary/90 shrink-0"
           >
@@ -223,4 +215,15 @@ export default function ChatWindow({ conversation, onBack }) {
       </div>
     </div>
   );
+}
+
+function formatTime(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now - d;
+  const diffDays = Math.floor(diffMs / 86400000);
+  if (diffDays === 0) return d.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+  if (diffDays === 1) return "ieri";
+  return d.toLocaleDateString("it-IT", { day: "numeric", month: "short" });
 }

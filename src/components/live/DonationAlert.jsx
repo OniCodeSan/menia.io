@@ -18,7 +18,7 @@ export default function DonationAlert({ donation }) {
           <div>
             <span className="text-sm font-bold text-chart-4">{donation.user}</span>
             <span className="text-sm text-foreground"> ha donato </span>
-            <span className="text-sm font-bold text-chart-4">€{donation.amount}!</span>
+            <span className="text-sm font-bold text-chart-4">{donation.amount} Token!</span>
           </div>
         </motion.div>
       )}

@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/AuthContext";
 import { authService } from "@/lib/auth";
+import { storageService } from "@/lib/storage";
 import { useNavigate, Link } from "react-router-dom";
 import {
   CheckCircle2, ChevronRight, ChevronLeft, Loader2, Camera, Tag,
@@ -84,6 +85,10 @@ export default function CreatorOnboarding() {
   const [profile, setProfile] = useState({ displayName: "", handle: "", bio: "", category: "", tags: "" });
   const [handleStatus, setHandleStatus] = useState(null); // null | 'checking' | 'available' | 'taken'
   const [pricing, setPricing] = useState({ monthly: "9.99", yearly: "89.99" });
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (isLoadingAuth) return;
@@ -133,16 +138,32 @@ export default function CreatorOnboarding() {
     setSaving(true);
     setSaveError("");
     try {
-      await updateUser({
+      let avatarUrl = null;
+      if (avatarFile) {
+        setUploadingAvatar(true);
+        const result = await storageService.upload(avatarFile, "avatars");
+        avatarUrl = result.url;
+        setUploadingAvatar(false);
+      }
+
+      const patch = {
         role: "creator",
         full_name: profile.displayName,
         handle: profile.handle,
         bio: profile.bio,
+        category: profile.category || null,
+        tags: profile.tags || null,
+        monthly_price: parseFloat(pricing.monthly) || 9.99,
+        yearly_price: parseFloat(pricing.yearly) || 89.99,
         onboarding_complete: true,
-      });
+      };
+      if (avatarUrl) patch.avatar_url = avatarUrl;
+
+      await updateUser(patch);
       setSaving(false);
       next();
     } catch (e) {
+      setUploadingAvatar(false);
       setSaveError(e.message || "Errore durante il salvataggio");
       setSaving(false);
     }
@@ -228,7 +249,7 @@ export default function CreatorOnboarding() {
             <div className="w-9 h-9 rounded-xl bg-primary/20 flex items-center justify-center">
               <Zap className="w-5 h-5 text-primary" />
             </div>
-            <span className="font-heading text-xl font-bold">Unlockr</span>
+            <span className="font-heading text-xl font-bold">Tokaro.fans</span>
           </Link>
 
           <AnimatePresence mode="wait">
@@ -291,7 +312,7 @@ export default function CreatorOnboarding() {
             <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
               <Zap className="w-4 h-4 text-primary" />
             </div>
-            <span className="font-heading text-lg font-bold">Unlockr</span>
+            <span className="font-heading text-lg font-bold">Tokaro.fans</span>
           </Link>
         </div>
 
@@ -366,14 +387,36 @@ export default function CreatorOnboarding() {
                   <p className="text-sm text-muted-foreground">Queste info saranno visibili ai tuoi fan sul tuo profilo pubblico.</p>
                 </div>
 
-                {/* Avatar placeholder */}
+                {/* Avatar upload */}
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/30 to-accent/20 border-2 border-dashed border-primary/30 flex items-center justify-center cursor-pointer hover:bg-primary/20 transition-all">
-                    <Camera className="w-6 h-6 text-primary/60" />
-                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setAvatarFile(file);
+                      setAvatarPreview(URL.createObjectURL(file));
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/30 to-accent/20 border-2 border-dashed border-primary/30 flex items-center justify-center cursor-pointer hover:bg-primary/20 transition-all overflow-hidden"
+                  >
+                    {avatarPreview ? (
+                      <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <Camera className="w-6 h-6 text-primary/60" />
+                    )}
+                  </button>
                   <div>
                     <p className="text-sm font-medium">Foto profilo</p>
-                    <p className="text-xs text-muted-foreground">Puoi aggiungerla dopo dalla dashboard</p>
+                    <p className="text-xs text-muted-foreground">
+                      {avatarFile ? avatarFile.name : "Clicca per caricare un'immagine"}
+                    </p>
                   </div>
                 </div>
 
@@ -577,7 +620,7 @@ export default function CreatorOnboarding() {
                     <ChevronLeft className="w-4 h-4" />
                   </Button>
                   <Button onClick={handleFinish} disabled={saving} className="flex-1 h-11 bg-primary hover:bg-primary/90 glow-primary font-semibold">
-                    {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Salvataggio...</> : <>Completa setup <Rocket className="w-4 h-4 ml-2" /></>}
+                    {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{uploadingAvatar ? "Caricamento foto..." : "Salvataggio..."}</> : <>Completa setup <Rocket className="w-4 h-4 ml-2" /></>}
                   </Button>
                 </div>
               </motion.div>
@@ -585,7 +628,7 @@ export default function CreatorOnboarding() {
           </AnimatePresence>
         </div>
 
-        <p className="relative text-xs text-muted-foreground mt-10">© 2026 Unlockr · <Link to="/" className="hover:text-foreground">Home</Link></p>
+        <p className="relative text-xs text-muted-foreground mt-10">© 2026 Tokaro.fans · <Link to="/" className="hover:text-foreground">Home</Link></p>
       </div>
     </div>
   );

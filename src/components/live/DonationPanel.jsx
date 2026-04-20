@@ -6,18 +6,20 @@ import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 import { walletService } from "@/lib/wallet";
+import { processDonation } from "@/lib/monetization";
+import { hasSupabase, supabase } from "@/lib/supabase";
 
 const QUICK_AMOUNTS = [20, 50, 100, 200, 500];
 const MIN_DONATION = 10;
 
-export default function DonationPanel({ creatorName, isSubscribed, onDonated }) {
+export default function DonationPanel({ liveId, creatorId, creatorName, isSubscribed, onDonated }) {
   const { user } = useAuth();
   const [amount, setAmount] = useState("");
   const [donated, setDonated] = useState(false);
   const [activeTab, setActiveTab] = useState("donate");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [balance, setBalance] = useState(/** @type {number | null} */ (null));
+  const [balance, setBalance] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -29,7 +31,7 @@ export default function DonationPanel({ creatorName, isSubscribed, onDonated }) 
   }, [user]);
 
   const parsedAmount = parseInt(amount, 10);
-  const validAmount = Number.isFinite(parsedAmount) && parsedAmount >= MIN_DONATION;
+  const validAmount = Number.isFinite(parsedAmount) && parsedAmount >= MIN_DONATION && parsedAmount <= 100000;
 
   const handleDonate = async () => {
     setError("");
@@ -41,14 +43,25 @@ export default function DonationPanel({ creatorName, isSubscribed, onDonated }) 
     }
     setLoading(true);
     try {
-      await walletService.spend(user.id, parsedAmount, `Donazione live a ${creatorName}`);
+      await processDonation(user.id, creatorId, parsedAmount, liveId);
       setBalance((b) => (b === null ? b : b - parsedAmount));
+
+      if (hasSupabase && liveId) {
+        await supabase.from("live_chat_messages").insert({
+          live_id: liveId,
+          user_id: user.id,
+          message: `Ha donato ${parsedAmount} Token!`,
+          type: "donation",
+          donation_amount: parsedAmount,
+        });
+      }
+
       setDonated(true);
-      onDonated?.({ user: "Tu", amount: parsedAmount, type: "donation" });
+      onDonated?.({ id: Date.now(), user: user.full_name || "Tu", amount: parsedAmount, type: "donation" });
       setTimeout(() => setDonated(false), 3000);
       setAmount("");
     } catch (e) {
-      setError(/** @type {any} */ (e)?.message || "Errore durante la donazione.");
+      setError(e?.message || "Errore durante la donazione.");
     } finally {
       setLoading(false);
     }
@@ -56,7 +69,6 @@ export default function DonationPanel({ creatorName, isSubscribed, onDonated }) 
 
   return (
     <div className="p-4">
-      {/* Tabs */}
       <div className="flex gap-1 mb-4 bg-secondary/40 p-1 rounded-xl">
         {[
           { id: "donate", label: "Dona", icon: Zap },
@@ -127,7 +139,7 @@ export default function DonationPanel({ creatorName, isSubscribed, onDonated }) 
                   className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-chart-3/15 border border-chart-3/30 text-chart-3 text-sm font-semibold"
                 >
                   <Heart className="w-4 h-4 fill-chart-3" />
-                  Donazione inviata! Grazie ❤️
+                  Donazione inviata! Grazie
                 </motion.div>
               ) : (
                 <Button
@@ -146,7 +158,7 @@ export default function DonationPanel({ creatorName, isSubscribed, onDonated }) 
             {isSubscribed ? (
               <div className="text-center py-4">
                 <Crown className="w-8 h-8 text-chart-4 mx-auto mb-2" />
-                <p className="text-sm font-semibold mb-1">Sei già abbonato! 🎉</p>
+                <p className="text-sm font-semibold mb-1">Sei già abbonato!</p>
                 <p className="text-xs text-muted-foreground">Hai accesso a tutti i contenuti premium e live esclusivi.</p>
               </div>
             ) : (

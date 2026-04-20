@@ -62,7 +62,7 @@ export default function CreatorPortal() {
             <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
               <Crown className="w-5 h-5 text-primary" />
             </div>
-            <span className="font-heading text-2xl font-bold">Unlockr</span>
+            <span className="font-heading text-2xl font-bold">Tokaro.fans</span>
           </div>
           <h1 className="font-heading text-3xl font-bold mb-2">Area Creator</h1>
           <p className="text-muted-foreground text-sm">
@@ -122,7 +122,7 @@ export default function CreatorPortal() {
         </div>
 
         <p className="text-center text-xs text-muted-foreground mt-6">
-          © 2026 Unlockr · Tutti i diritti riservati
+          © 2026 Tokaro.fans · Tutti i diritti riservati
         </p>
       </motion.div>
     </div>

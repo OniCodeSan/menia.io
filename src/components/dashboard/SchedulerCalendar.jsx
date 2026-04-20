@@ -16,13 +16,7 @@ const TYPE_CONFIG = {
   live:  { label: "Live",   icon: Radio,     color: "text-destructive", bg: "bg-destructive/15 border-destructive/30" },
 };
 
-const INITIAL_EVENTS = [
-  { id: 1, date: "2026-04-11", time: "10:00", title: "Workout mattutino — tutorial HIIT", type: "video", notify: true },
-  { id: 2, date: "2026-04-14", time: "18:30", title: "Live Q&A con i fan", type: "live", notify: true },
-  { id: 3, date: "2026-04-17", time: "12:00", title: "Nuove ricette fit della settimana", type: "post", notify: false },
-  { id: 4, date: "2026-04-21", time: "20:00", title: "Full Body HIIT — sessione serale", type: "live", notify: true },
-  { id: 5, date: "2026-04-25", time: "09:00", title: "Piano alimentare aprile", type: "post", notify: true },
-];
+const INITIAL_EVENTS = [];
 
 function getDaysInMonth(year, month) {
   return new Date(year, month + 1, 0).getDate();

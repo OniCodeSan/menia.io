@@ -1,12 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLocation } from "react-router-dom";
 import AuthGuard from "../components/shared/AuthGuard";
 import { MessageCircle } from "lucide-react";
 import ConversationList from "../components/messages/ConversationList";
 import ChatWindow from "../components/messages/ChatWindow";
 
 export default function Messages() {
+  const location = useLocation();
   const [selected, setSelected] = useState(null);
+
+  useEffect(() => {
+    if (location.state?.openConversation && !selected) {
+      setSelected(location.state.openConversation);
+    }
+  }, [location.state]);
 
   return (
     <AuthGuard>

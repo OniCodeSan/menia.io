@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Search, Loader2, RefreshCw, Lock, ArrowRight } from "lucide-react";
@@ -8,7 +8,22 @@ import { useFeedEngine } from "../hooks/useFeedEngine";
 import FeedTabs from "../components/feed/FeedTabs";
 import SegmentBadge from "../components/feed/SegmentBadge";
 import CreatorFeedCard from "../components/feed/CreatorFeedCard";
+import PostFeedCard from "../components/feed/PostFeedCard";
+import VideoFeed from "../components/feed/VideoFeed";
+import { usePostInteractions } from "../hooks/usePostInteractions";
 import { useAuth } from "@/lib/AuthContext";
+import SEO from "@/components/shared/SEO";
+
+function useIsMobile(breakpoint = 640) {
+  const [mobile, setMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < breakpoint);
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${breakpoint - 1}px)`);
+    const handler = (e) => setMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, [breakpoint]);
+  return mobile;
+}
 
 const PREVIEW_LIMIT = 4;
 
@@ -26,13 +41,24 @@ export default function Feed() {
   const { isAuthenticated, isLoadingAuth } = useAuth();
   const [search, setSearch] = useState("");
   const isLoggedIn = isLoadingAuth ? null : isAuthenticated;
+  const isMobile = useIsMobile();
+  const isTimeline = tab === "timeline";
+  const { likedSet, counts, toggleLike, updateCommentCount, share } = usePostInteractions(isTimeline ? currentFeed : []);
 
-  const allDisplayed = (currentFeed || []).filter(c => {
+  const allDisplayed = (currentFeed || []).filter(item => {
     if (!search.trim()) return true;
     const q = search.toLowerCase();
+    if (isTimeline) {
+      const c = item.creator || {};
+      return (
+        item.title?.toLowerCase().includes(q) ||
+        c.full_name?.toLowerCase().includes(q) ||
+        c.handle?.toLowerCase().includes(q)
+      );
+    }
     return (
-      c.creator_name?.toLowerCase().includes(q) ||
-      (c.tags || []).some(t => t.toLowerCase().includes(q))
+      item.creator_name?.toLowerCase().includes(q) ||
+      (item.tags || []).some(t => t.toLowerCase().includes(q))
     );
   });
 
@@ -40,17 +66,22 @@ export default function Feed() {
   const displayed = isLimited ? allDisplayed.slice(0, PREVIEW_LIMIT) : allDisplayed;
   const showLoginWall = isLimited && allDisplayed.length > PREVIEW_LIMIT;
 
+  if (isMobile && isTimeline) {
+    return <VideoFeed posts={feeds.timeline} loading={loading} />;
+  }
+
   return (
     <div className="min-h-screen">
+      <SEO title="Feed" description="Segui i contenuti dei tuoi creator preferiti su Tokaro.fans." url="/feed" />
       {/* Header */}
-      <div className="sticky top-16 z-40 glass-strong border-b border-border/30">
+      <div className="sticky top-0 md:top-16 z-40 glass-strong border-b border-border/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 space-y-3">
           {/* Search + segment */}
           <div className="flex items-center gap-3">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Cerca creator o tag..."
+                placeholder={`Cerca in "${tab}"...`}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="pl-10 bg-secondary/50 border-border/30 h-10"
@@ -63,7 +94,7 @@ export default function Feed() {
           </div>
 
           {/* Feed tabs */}
-          <FeedTabs activeTab={tab} setTab={setTab} livCount={feeds.live?.length || 0} />
+          <FeedTabs activeTab={tab} setTab={(t) => { setSearch(""); setTab(t); }} livCount={feeds.live?.length || 0} />
         </div>
       </div>
 
@@ -71,6 +102,7 @@ export default function Feed() {
         {/* Tab description */}
         <motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
           {{
+            timeline:     <p className="text-sm text-muted-foreground">Gli ultimi contenuti pubblicati dai creator</p>,
             foryou:       <p className="text-sm text-muted-foreground">Il tuo feed personalizzato — ottimizzato per massimizzare la tua esperienza</p>,
             highspenders: <p className="text-sm text-muted-foreground">Creator con il più alto tasso di conversione e spesa media</p>,
             discovery:    <p className="text-sm text-muted-foreground">Nuovi creator e contenuti fuori dalla tua bolla</p>,
@@ -86,29 +118,46 @@ export default function Feed() {
         ) : displayed.length === 0 ? (
           <div className="text-center py-24">
             <p className="text-3xl mb-3">
-              {tab === "live" ? "📡" : tab === "discovery" ? "🔭" : "✨"}
+              {tab === "timeline" ? "📝" : tab === "live" ? "📡" : tab === "discovery" ? "🔭" : "✨"}
             </p>
             <p className="font-heading font-bold mb-1">
-              {tab === "live" ? "Nessuna live attiva" : "Nessun risultato"}
+              {tab === "timeline" ? "Nessun post ancora" : tab === "live" ? "Nessuna live attiva" : "Nessun risultato"}
             </p>
             <p className="text-sm text-muted-foreground">
-              {tab === "live" ? "Torna più tardi per vedere i creator in diretta." : "Prova a cercare con parole diverse."}
+              {tab === "timeline" ? "I creator non hanno ancora pubblicato contenuti." : tab === "live" ? "Torna più tardi per vedere i creator in diretta." : "Prova a cercare con parole diverse."}
             </p>
           </div>
         ) : (
           <div className="relative">
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {displayed.map((creator, i) => (
-                <CreatorFeedCard
-                  key={creator.id || creator.creator_id}
-                  creator={creator}
-                  index={i}
-                  onView={trackView}
-                  onLeave={trackLeave}
-                  onClickCreator={trackClick}
-                />
-              ))}
-            </div>
+            {isTimeline ? (
+              <div className="max-w-xl mx-auto space-y-4">
+                {displayed.map((post, i) => (
+                  <PostFeedCard
+                    key={post.id}
+                    post={post}
+                    index={i}
+                    liked={likedSet.has(post.id)}
+                    likesCount={counts[post.id]?.likes || 0}
+                    commentsCount={counts[post.id]?.comments || 0}
+                    onToggleLike={toggleLike}
+                    onCommentCountChange={updateCommentCount}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {displayed.map((creator, i) => (
+                  <CreatorFeedCard
+                    key={creator.id || creator.creator_id}
+                    creator={creator}
+                    index={i}
+                    onView={trackView}
+                    onLeave={trackLeave}
+                    onClickCreator={trackClick}
+                  />
+                ))}
+              </div>
+            )}
 
             {/* Login wall */}
             <AnimatePresence>

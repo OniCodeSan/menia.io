@@ -12,7 +12,7 @@ export default function HowItWorks() {
   const hw = t.howItWorks;
 
   return (
-    <section className="py-24 px-4 sm:px-6 relative">
+    <section className="py-12 sm:py-24 px-4 sm:px-6 relative">
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent" />
       
       <div className="max-w-7xl mx-auto relative">
@@ -20,7 +20,7 @@ export default function HowItWorks() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-16"
+          className="text-center mb-8 sm:mb-16"
         >
           <p className="text-primary font-semibold text-sm tracking-widest uppercase mb-3">{hw.label}</p>
           <h2 className="font-heading text-3xl sm:text-4xl font-bold">

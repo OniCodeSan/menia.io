@@ -1,0 +1,17 @@
+[Unit]
+Description=Tokaro.fans Stripe API Server
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/opt/tokaro-stripe
+ExecStart=/usr/bin/node index.js
+Restart=on-failure
+RestartSec=5
+Environment=NODE_ENV=production
+
+EnvironmentFile=/opt/tokaro-stripe/.env
+
+[Install]
+WantedBy=multi-user.target

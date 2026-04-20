@@ -2,14 +2,15 @@ import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Radio, Zap, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
+import { nameToHandle } from "@/lib/mockData";
 
-const AVATARS = [
+const FALLBACK_AVATARS = [
   "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop&crop=face",
   "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face",
   "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&h=200&fit=crop&crop=face",
   "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&h=200&fit=crop&crop=face",
 ];
-const COVERS = [
+const FALLBACK_COVERS = [
   "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&h=340&fit=crop",
   "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=600&h=340&fit=crop",
   "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&h=340&fit=crop",
@@ -45,9 +46,11 @@ export default function CreatorFeedCard({ creator, index = 0, onView, onLeave, o
     return () => obs.disconnect();
   }, [creator.creator_id, onView, onLeave]);
 
-  const avatar = AVATARS[seededIndex(creator.creator_id, AVATARS)];
-  const cover  = COVERS[seededIndex(creator.creator_id + "c", COVERS)];
+  const avatar = creator.avatar_url || FALLBACK_AVATARS[seededIndex(creator.creator_id, FALLBACK_AVATARS)];
+  const cover  = creator.cover_url || FALLBACK_COVERS[seededIndex(creator.creator_id + "c", FALLBACK_COVERS)];
   const score  = creator._score != null ? Math.round(creator._score * 100) : null;
+  const profileSlug = creator.creator_handle || nameToHandle(creator.creator_name) || creator.creator_id;
+  const profileHref = `/creator/${profileSlug}`;
 
   return (
     <motion.div
@@ -119,7 +122,7 @@ export default function CreatorFeedCard({ creator, index = 0, onView, onLeave, o
             {creator.global_avg_spend || 0} T avg
           </span>
           <Link
-            to="/creator"
+            to={profileHref}
             onClick={() => onClickCreator?.(creator.creator_id)}
             className="text-primary font-semibold hover:underline"
           >

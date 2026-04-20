@@ -1,48 +1,79 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Crown, X, Check, Loader2, CheckCircle2 } from "lucide-react";
+import { Crown, X, Check, Loader2, CheckCircle2, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { walletService } from "@/lib/wallet";
+import { processSubscription } from "@/lib/monetization";
 import { useAuth } from "@/lib/AuthContext";
+import { useLanguage } from "@/lib/LanguageContext";
+import { useNavigate, useLocation } from "react-router-dom";
+import toast from "react-hot-toast";
 
-const PLANS = [
-  {
-    id: "base",
-    label: "Base",
-    price: "50 Token/mese",
-    tokens: 50,
-    features: ["Contenuti esclusivi base", "Messaggi diretti", "Community access"],
-    color: "border-primary/40 bg-primary/5",
-    btnClass: "bg-primary hover:bg-primary/90",
-  },
-  {
-    id: "pro",
-    label: "Pro",
-    price: "100 Token/mese",
-    tokens: 100,
-    features: ["Tutto del piano Base", "Live esclusive", "Contenuti premium", "Badge fan Pro"],
-    color: "border-chart-4/40 bg-chart-4/5",
-    btnClass: "bg-chart-4 hover:bg-chart-4/90",
-    popular: true,
-  },
-];
+const DEFAULT_MONTHLY = 100;
+const DEFAULT_BASE_FRACTION = 0.5;
 
-export default function SubscriptionModal({ creatorName, onClose }) {
+export default function SubscriptionModal({
+  creatorId,
+  creatorName,
+  creatorHandle,
+  monthlyTokens = DEFAULT_MONTHLY,
+  yearlyTokens,
+  onClose,
+}) {
   const { user } = useAuth();
+  const { t } = useLanguage();
+  const tSM = t.subscriptionModal;
+  const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(null);
   const [error, setError] = useState("");
   const [doneId, setDoneId] = useState(null);
 
+  const baseTokens = Math.max(10, Math.round(monthlyTokens * DEFAULT_BASE_FRACTION));
+  const proTokens = monthlyTokens;
+
+  const plans = [
+    {
+      id: "base",
+      label: tSM.planBase,
+      price: `${baseTokens} ${tSM.perMonth}`,
+      tokens: baseTokens,
+      features: tSM.featuresBase,
+      color: "border-primary/40 bg-primary/5",
+      btnClass: "bg-primary hover:bg-primary/90",
+    },
+    {
+      id: "pro",
+      label: tSM.planPro,
+      price: `${proTokens} ${tSM.perMonth}`,
+      tokens: proTokens,
+      features: tSM.featuresPro,
+      color: "border-chart-4/40 bg-chart-4/5",
+      btnClass: "bg-chart-4 hover:bg-chart-4/90",
+      popular: true,
+    },
+  ];
+
+  const goToLogin = () => {
+    const fromPath = location.pathname + location.search;
+    navigate("/fan-login", { state: { from: fromPath } });
+  };
+
   const handleSubscribe = async (plan) => {
-    if (!user) { setError("Devi accedere per abbonarti"); return; }
+    if (!user) {
+      goToLogin();
+      return;
+    }
     setError("");
     setLoading(plan.id);
     try {
-      await walletService.spend(user.id, plan.tokens, `Abbonamento ${plan.label} a ${creatorName}`);
+      const tier = plan.id === "pro" ? "premium" : "base";
+      await processSubscription(user.id, creatorId, tier);
+
       setDoneId(plan.id);
-      setTimeout(() => onClose?.(), 1500);
+      toast.success(`Abbonamento ${plan.label} attivato per ${creatorName}!`);
+      setTimeout(() => onClose?.({ subscribed: true, tier }), 1800);
     } catch (e) {
-      setError(e.message || "Errore durante l'abbonamento");
+      setError(e.message || tSM.errorDefault);
     } finally {
       setLoading(null);
     }
@@ -59,20 +90,42 @@ export default function SubscriptionModal({ creatorName, onClose }) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Crown className="w-5 h-5 text-chart-4" />
-            <h3 className="font-heading font-bold text-lg">Abbonati a {creatorName}</h3>
+            <h3 className="font-heading font-bold text-lg">{tSM.title} {creatorName}</h3>
           </div>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <X className="w-5 h-5" />
           </button>
         </div>
 
+        {!user && (
+          <div className="flex items-start gap-3 p-3 rounded-xl bg-primary/10 border border-primary/20 text-sm">
+            <LogIn className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+            <div className="flex-1">
+              <p className="text-foreground font-medium">{tSM.loginRequired}</p>
+              <button
+                onClick={goToLogin}
+                className="text-xs text-primary hover:underline mt-0.5"
+              >
+                {tSM.goToLogin}
+              </button>
+            </div>
+          </div>
+        )}
+
         {error && <p className="text-xs text-destructive">{error}</p>}
+
+        {yearlyTokens && (
+          <p className="text-xs text-muted-foreground text-center">
+            {tSM.yearlyBadgePrefix} <span className="font-semibold text-foreground">{yearlyTokens} {tSM.perYear}</span>
+          </p>
+        )}
+
         <div className="grid sm:grid-cols-2 gap-4">
-          {PLANS.map((plan) => (
+          {plans.map((plan) => (
             <div key={plan.id} className={`border rounded-2xl p-4 space-y-4 relative ${plan.color}`}>
               {plan.popular && (
                 <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] font-bold px-3 py-0.5 bg-chart-4 text-white rounded-full">
-                  POPOLARE
+                  {tSM.popular}
                 </span>
               )}
               <div>
@@ -95,9 +148,11 @@ export default function SubscriptionModal({ creatorName, onClose }) {
                 {loading === plan.id ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : doneId === plan.id ? (
-                  <><CheckCircle2 className="w-4 h-4 mr-1" /> Attivo</>
+                  <><CheckCircle2 className="w-4 h-4 mr-1" /> {tSM.active}</>
+                ) : !user ? (
+                  `${tSM.loginFor} ${plan.label}`
                 ) : (
-                  `Scegli ${plan.label}`
+                  `${tSM.choose} ${plan.label}`
                 )}
               </Button>
             </div>

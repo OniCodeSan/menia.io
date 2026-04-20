@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-const PAYOUT_RATE = 0.075;
+const PAYOUT_RATE = 0.10;
 const MIN_PAYOUT_EUR = 50;
 
 function TransactionRow({ tx }) {

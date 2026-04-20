@@ -1,10 +1,11 @@
-import { Zap, TrendingUp, Compass, Radio } from "lucide-react";
+import { Zap, TrendingUp, Compass, Radio, Newspaper } from "lucide-react";
 
 const TABS = [
-  { id: "foryou",       label: "For You",       icon: Zap,        desc: "Personalizzato per te" },
-  { id: "highspenders", label: "Premium",        icon: TrendingUp, desc: "Top spender content" },
-  { id: "discovery",    label: "Discovery",      icon: Compass,    desc: "Nuovi creator" },
-  { id: "live",         label: "Live Now",       icon: Radio,      desc: "Dirette attive" },
+  { id: "timeline",     label: "Timeline",       icon: Newspaper,  desc: "Ultimi post dai creator" },
+  { id: "foryou",       label: "For You",        icon: Zap,        desc: "Personalizzato per te" },
+  { id: "highspenders", label: "Premium",         icon: TrendingUp, desc: "Top spender content" },
+  { id: "discovery",    label: "Discovery",       icon: Compass,    desc: "Nuovi creator" },
+  { id: "live",         label: "Live Now",        icon: Radio,      desc: "Dirette attive" },
 ];
 
 export default function FeedTabs({ activeTab, setTab, livCount = 0 }) {

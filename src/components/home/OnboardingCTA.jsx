@@ -28,11 +28,9 @@ export default function OnboardingCTA() {
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto mb-8">{c.subtitle}</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/creator-onboarding">
-              <Button size="lg" className="bg-primary hover:bg-primary/90 glow-primary font-semibold text-base px-8 h-12 group">
-                {c.button}
-                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-              </Button>
+            <Link to="/creator-onboarding" className="inline-flex items-center justify-center bg-primary hover:bg-primary/90 glow-primary font-semibold text-sm sm:text-base px-6 sm:px-8 h-12 rounded-md text-primary-foreground w-full sm:w-auto group">
+              {c.button}
+              <ArrowRight className="w-4 h-4 ml-2 shrink-0 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
           

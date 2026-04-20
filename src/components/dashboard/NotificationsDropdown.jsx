@@ -1,21 +1,36 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bell, X, UserPlus, DollarSign, MessageCircle, Heart } from "lucide-react";
+import { Bell, X, BellOff, Repeat2, AtSign, Heart, MessageCircle, Crown, Coins } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { notificationsService } from "@/lib/notifications";
 
-const NOTIFICATIONS = [
-  { id: 1, icon: UserPlus, color: "text-primary", bg: "bg-primary/10", title: "Nuovo abbonato", desc: "Lorenzo R. si è abbonato al tuo piano mensile", time: "2 min fa", unread: true },
-  { id: 2, icon: DollarSign, color: "text-chart-3", bg: "bg-chart-3/10", title: "Donazione ricevuta", desc: "Giulia M. ti ha donato €10 durante la live", time: "15 min fa", unread: true },
-  { id: 3, icon: MessageCircle, color: "text-accent", bg: "bg-accent/10", title: "Nuovo messaggio", desc: "Martina P. ti ha inviato un messaggio privato", time: "1 ora fa", unread: true },
-  { id: 4, icon: Heart, color: "text-chart-5", bg: "bg-chart-5/10", title: "Post molto apprezzato", desc: "Il tuo ultimo post ha ricevuto 120 like", time: "3 ore fa", unread: false },
-  { id: 5, icon: UserPlus, color: "text-primary", bg: "bg-primary/10", title: "Nuovo abbonato", desc: "Davide C. si è abbonato al tuo piano annuale", time: "ieri", unread: false },
-];
+const TYPE_ICON = {
+  tag: { icon: AtSign, color: "text-accent", bg: "bg-accent/10" },
+  reshare: { icon: Repeat2, color: "text-chart-3", bg: "bg-chart-3/10" },
+  like: { icon: Heart, color: "text-destructive", bg: "bg-destructive/10" },
+  comment: { icon: MessageCircle, color: "text-primary", bg: "bg-primary/10" },
+  subscription: { icon: Crown, color: "text-chart-4", bg: "bg-chart-4/10" },
+  token: { icon: Coins, color: "text-chart-4", bg: "bg-chart-4/10" },
+};
+
+const timeAgo = (iso) => {
+  if (!iso) return "";
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "ora";
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  return `${days}g`;
+};
 
 export default function NotificationsDropdown() {
   const [open, setOpen] = useState(false);
-  const [notifications, setNotifications] = useState(NOTIFICATIONS);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
   const ref = useRef(null);
-  const unreadCount = notifications.filter(n => n.unread).length;
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   useEffect(() => {
     const handleClick = (e) => {
@@ -25,7 +40,24 @@ export default function NotificationsDropdown() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  const markAllRead = () => setNotifications(n => n.map(x => ({ ...x, unread: false })));
+  useEffect(() => {
+    if (!open) return;
+    setLoading(true);
+    notificationsService.list({ limit: 30 })
+      .then(setNotifications)
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [open]);
+
+  const markAllRead = async () => {
+    await notificationsService.markAllRead();
+    setNotifications(n => n.map(x => ({ ...x, read: true })));
+  };
+
+  const markRead = async (id) => {
+    await notificationsService.markRead(id);
+    setNotifications(prev => prev.map(x => x.id === id ? { ...x, read: true } : x));
+  };
 
   return (
     <div className="relative" ref={ref}>
@@ -68,28 +100,45 @@ export default function NotificationsDropdown() {
             </div>
 
             <div className="max-h-80 overflow-y-auto divide-y divide-border/10">
-              {notifications.map((n) => {
-                const Icon = n.icon;
-                return (
-                  <div
-                    key={n.id}
-                    className={`flex gap-3 px-4 py-3 hover:bg-secondary/30 transition-colors cursor-pointer ${n.unread ? "bg-secondary/20" : ""}`}
-                    onClick={() => setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, unread: false } : x))}
-                  >
-                    <div className={`w-8 h-8 rounded-xl ${n.bg} flex items-center justify-center shrink-0 mt-0.5`}>
-                      <Icon className={`w-4 h-4 ${n.color}`} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-xs font-semibold truncate">{n.title}</p>
-                        {n.unread && <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
-                      </div>
-                      <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{n.desc}</p>
-                      <p className="text-[10px] text-muted-foreground/60 mt-1">{n.time}</p>
-                    </div>
+              {loading ? (
+                <div className="py-10 flex justify-center">
+                  <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                </div>
+              ) : notifications.length === 0 ? (
+                <div className="py-10 flex flex-col items-center justify-center text-center px-6">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
+                    <BellOff className="w-5 h-5 text-primary/60" />
                   </div>
-                );
-              })}
+                  <p className="text-xs font-semibold mb-1">Nessuna notifica</p>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    Qui vedrai tag, ricondivisioni, abbonamenti e altre attività.
+                  </p>
+                </div>
+              ) : (
+                notifications.map((n) => {
+                  const meta = TYPE_ICON[n.type] || TYPE_ICON.tag;
+                  const Icon = meta.icon;
+                  return (
+                    <div
+                      key={n.id}
+                      className={`flex gap-3 px-4 py-3 hover:bg-secondary/30 transition-colors cursor-pointer ${!n.read ? "bg-secondary/20" : ""}`}
+                      onClick={() => markRead(n.id)}
+                    >
+                      <div className={`w-8 h-8 rounded-xl ${meta.bg} flex items-center justify-center shrink-0 mt-0.5`}>
+                        <Icon className={`w-4 h-4 ${meta.color}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-xs font-semibold truncate">{n.title}</p>
+                          {!n.read && <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
+                        </div>
+                        {n.body && <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed line-clamp-2">{n.body}</p>}
+                        <p className="text-[10px] text-muted-foreground/60 mt-1">{timeAgo(n.created_at)}</p>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </motion.div>
         )}
