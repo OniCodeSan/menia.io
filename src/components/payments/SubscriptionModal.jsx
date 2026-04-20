@@ -6,7 +6,7 @@ import { processSubscription } from "@/lib/monetization";
 import { useAuth } from "@/lib/AuthContext";
 import { useLanguage } from "@/lib/LanguageContext";
 import { useNavigate, useLocation } from "react-router-dom";
-import toast from "react-hot-toast";
+import { toast } from "@/components/ui/use-toast";
 
 const DEFAULT_MONTHLY = 100;
 const DEFAULT_BASE_FRACTION = 0.5;
@@ -70,7 +70,7 @@ export default function SubscriptionModal({
       await processSubscription(user.id, creatorId, tier);
 
       setDoneId(plan.id);
-      toast.success(`Abbonamento ${plan.label} attivato per ${creatorName}!`);
+      toast({ title: `Abbonamento ${plan.label} attivato per ${creatorName}!` });
       setTimeout(() => onClose?.({ subscribed: true, tier }), 1800);
     } catch (e) {
       setError(e.message || tSM.errorDefault);

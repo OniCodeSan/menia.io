@@ -137,7 +137,7 @@ export default function BottomNav({ feedMode = false }) {
               }`}>
                 <Icon className={`w-5 h-5 ${active || highlight ? "text-primary" : ""}`} />
               </div>
-              <span className={`text-[10px] font-semibold ${active || highlight ? "text-primary" : ""}`}>{label}</span>
+              <span className={`text-[11px] font-semibold ${active || highlight ? "text-primary" : ""}`}>{label}</span>
             </Link>
           );
         })}

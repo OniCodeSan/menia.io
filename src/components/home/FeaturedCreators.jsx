@@ -90,17 +90,24 @@ export default function FeaturedCreators() {
           </h2>
         </motion.div>
 
-        <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-4 sm:hidden -mx-4 px-4">
-          {creators.map((creator, i) => (
-            <CreatorCard key={creator.handle} creator={creator} i={i} />
-          ))}
-        </div>
-
-        <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {creators.map((creator, i) => (
-            <CreatorCard key={creator.handle} creator={creator} i={i} />
-          ))}
-        </div>
+        {creators.length === 1 ? (
+          <div className="max-w-sm mx-auto">
+            <CreatorCard creator={creators[0]} i={0} />
+          </div>
+        ) : (
+          <>
+            <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-4 sm:hidden -mx-4 px-4">
+              {creators.map((creator, i) => (
+                <CreatorCard key={creator.handle} creator={creator} i={i} />
+              ))}
+            </div>
+            <div className={`hidden sm:grid gap-6 ${creators.length === 2 ? "sm:grid-cols-2 max-w-2xl mx-auto" : creators.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2 lg:grid-cols-4"}`}>
+              {creators.map((creator, i) => (
+                <CreatorCard key={creator.handle} creator={creator} i={i} />
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </section>
   );

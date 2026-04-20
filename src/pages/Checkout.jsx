@@ -9,7 +9,7 @@ import { processSubscription, processContentUnlock } from "@/lib/monetization";
 import { supabase, hasSupabase } from "@/lib/supabase";
 import { storageService } from "@/lib/storage";
 import { useLanguage } from "@/lib/LanguageContext";
-import toast from "react-hot-toast";
+import { toast } from "@/components/ui/use-toast";
 
 export default function Checkout() {
   const { user } = useAuth();
@@ -152,14 +152,14 @@ export default function Checkout() {
     try {
       if (isUnlock) {
         await processContentUnlock(user.id, content.id);
-        toast.success("Contenuto sbloccato!");
+        toast({ title: "Contenuto sbloccato!" });
         setDone(true);
       } else {
         const cid = creatorIdParam || creator.id;
         if (!cid) throw new Error("Creator non valido");
         const tier = tierParam === "premium" ? "premium" : "base";
         await processSubscription(user.id, cid, tier);
-        toast.success(`Abbonamento attivato per ${creator.name}!`);
+        toast({ title: `Abbonamento attivato per ${creator.name}!` });
         setDone(true);
       }
     } catch (e) {

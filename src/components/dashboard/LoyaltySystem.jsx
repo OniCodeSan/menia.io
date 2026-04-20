@@ -84,7 +84,7 @@ export default function LoyaltySystem() {
         ].map((s) => (
           <div key={s.label} className="bg-card/50 border border-border/30 rounded-2xl p-4 text-center">
             <p className={`text-2xl font-heading font-bold ${s.color}`}>{s.count}</p>
-            <p className="text-[11px] text-muted-foreground mt-1">{s.label}</p>
+            <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
           </div>
         ))}
       </div>

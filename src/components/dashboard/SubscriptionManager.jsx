@@ -68,7 +68,7 @@ export default function SubscriptionManager() {
               </div>
               <div>
                 <p className="text-lg font-heading font-bold">{s.value}</p>
-                <p className="text-[11px] text-muted-foreground leading-tight">{s.label}</p>
+                <p className="text-xs text-muted-foreground leading-tight">{s.label}</p>
               </div>
             </div>
           );
@@ -103,7 +103,7 @@ export default function SubscriptionManager() {
               <img src={sub.avatar} alt={sub.name} className="w-9 h-9 rounded-full object-cover shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold">{sub.name}</p>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   {sub.tier === "premium" ? "Pro" : "Base"} · da {sub.startedAt ? new Date(sub.startedAt).toLocaleDateString("it-IT") : "—"}
                 </p>
               </div>
