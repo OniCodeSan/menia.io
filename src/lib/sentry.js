@@ -21,3 +21,16 @@ export function initSentry() {
 }
 
 export { Sentry };
+
+// Helper per registrare errori "silenziosi": quei catch() {} che soft-failano.
+// Usage: .catch(silentReport("[ConversationList] fetch failed"))
+// Ritorna una funzione che capture-a su Sentry SOLO se inizializzato.
+// In dev senza DSN è un no-op silenzioso (niente console spam).
+export const silentReport = (label) => (err) => {
+  if (DSN) {
+    Sentry.captureException(err, { tags: { silent: true, label } });
+  } else if (import.meta.env.DEV) {
+    console.warn(`[silent] ${label}`, err?.message || err);
+  }
+};
+

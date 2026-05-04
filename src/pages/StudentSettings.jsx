@@ -107,7 +107,7 @@ function PasswordSection() {
 
   const save = async () => {
     setErr(""); setOk(false);
-    if (pw.length < 6) { setErr("La password deve avere almeno 6 caratteri"); return; }
+    if (pw.length < 8) { setErr("La password deve avere almeno 8 caratteri"); return; }
     if (pw !== pw2) { setErr("Le password non coincidono"); return; }
     setSaving(true);
     try {
@@ -129,7 +129,7 @@ function PasswordSection() {
       </div>
       <div className="space-y-2">
         <Label htmlFor="new_pw" className="text-xs">Nuova password</Label>
-        <Input id="new_pw" type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="Almeno 6 caratteri" autoComplete="new-password" />
+        <Input id="new_pw" type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="Almeno 8 caratteri" autoComplete="new-password" />
       </div>
       <div className="space-y-2">
         <Label htmlFor="new_pw2" className="text-xs">Conferma password</Label>

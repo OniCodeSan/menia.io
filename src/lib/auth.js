@@ -32,7 +32,7 @@ function humanizeAuthError(error) {
     return "Devi confermare la tua email prima di accedere. Controlla la posta.";
   }
   if (msg.includes("password") && (msg.includes("short") || msg.includes("weak") || msg.includes("at least"))) {
-    return "Password troppo debole. Usa almeno 6 caratteri.";
+    return "Password troppo debole. Usa almeno 8 caratteri.";
   }
   if (msg.includes("invalid") && msg.includes("email")) {
     return "Email non valida. Controlla l'indirizzo inserito.";
@@ -171,7 +171,7 @@ const loadProfile = async (authUser, { skipCache = false } = {}) => {
 const supabaseImpl = {
   async register({ email, password, role = "fan", full_name, date_of_birth }) {
     if (!email || !password) throw new Error("Email e password sono obbligatori");
-    if (password.length < 6) throw new Error("La password deve avere almeno 6 caratteri");
+    if (password.length < 8) throw new Error("La password deve avere almeno 8 caratteri");
     if (!date_of_birth) throw new Error("Data di nascita obbligatoria");
     const normalizedEmail = email.trim().toLowerCase();
 
@@ -324,7 +324,7 @@ const supabaseImpl = {
   },
 
   async updatePassword(newPassword) {
-    if (!newPassword || newPassword.length < 6) throw new Error("La password deve avere almeno 6 caratteri");
+    if (!newPassword || newPassword.length < 8) throw new Error("La password deve avere almeno 8 caratteri");
     return safeCall("updatePassword", async () => {
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw new Error(humanizeAuthError(error));
