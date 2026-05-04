@@ -52,7 +52,7 @@ export default function FanDashboard() {
     : null;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6 space-y-8">
+    <div data-test="dashboard-root" className="max-w-4xl mx-auto px-4 py-6 space-y-8">
       <div>
         <h1 className="font-heading text-2xl font-bold">Il mio account</h1>
         <p className="text-sm text-muted-foreground">I tuoi corsi e abbonamento</p>

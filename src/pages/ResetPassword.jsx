@@ -102,11 +102,11 @@ export default function ResetPassword() {
                 <Input
                   id="new-password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Almeno 6 caratteri"
+                  placeholder="Almeno 8 caratteri"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  minLength={6}
+                  minLength={8}
                   className="pl-9 pr-9 h-11 bg-secondary/40 border-border/50"
                 />
                 <button
@@ -130,7 +130,7 @@ export default function ResetPassword() {
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
                   required
-                  minLength={6}
+                  minLength={8}
                   className="pl-9 h-11 bg-secondary/40 border-border/50"
                 />
               </div>

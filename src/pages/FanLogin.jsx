@@ -172,11 +172,11 @@ export default function FanLogin() {
               <Input
                 id="fan-password"
                 type={showPassword ? "text" : "password"}
-                placeholder={mode === "register" ? "Almeno 6 caratteri" : "••••••••"}
+                placeholder={mode === "register" ? "Almeno 8 caratteri" : "••••••••"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={8}
                 className="pl-9 pr-9 h-11 bg-secondary/40 border-border/50"
               />
               <button

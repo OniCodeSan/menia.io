@@ -113,6 +113,12 @@ app.use("/api/webhooks/", webhookLimiter);
 app.use("/api/auth/", authLimiter);
 app.use("/api/gdpr/", gdprLimiter);
 app.use("/api/", generalLimiter);
+
+// CRITICO: il webhook Stripe DEVE ricevere il body raw per la signature
+// verification. Mountiamo express.raw SOLO su questo path PRIMA di json globale,
+// altrimenti json consuma il body e stripe.webhooks.constructEvent fallisce.
+app.use("/api/billing/webhook", express.raw({ type: "application/json", limit: "1mb" }));
+
 app.use(express.json({ limit: "16kb" }));
 
 // ---------------------------------------------------------------------------
