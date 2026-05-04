@@ -7,9 +7,9 @@ import { Link, useNavigate } from "react-router-dom";
 
 const FEATURES = [
   { icon: BarChart2, label: "Analytics avanzate", color: "text-primary" },
-  { icon: Users, label: "Gestione fan & CRM", color: "text-accent" },
-  { icon: Zap, label: "Monetizzazione", color: "text-chart-4" },
-  { icon: Crown, label: "Live & contenuti premium", color: "text-chart-5" },
+  { icon: Users, label: "Gestione studenti & CRM", color: "text-accent" },
+  { icon: Zap, label: "Contenuti Premium", color: "text-chart-4" },
+  { icon: Crown, label: "Boost visibilità", color: "text-chart-5" },
 ];
 
 export default function CreatorPortal() {
@@ -33,7 +33,7 @@ export default function CreatorPortal() {
   }, [user, isLoadingAuth, navigate]);
 
   const handleLogin = () => {
-    navigate("/creator-login");
+    navigate("/trainer-login");
   };
 
   if (checking && !accessDenied) {
@@ -62,12 +62,18 @@ export default function CreatorPortal() {
             <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
               <Crown className="w-5 h-5 text-primary" />
             </div>
-            <span className="font-heading text-2xl font-bold">Tokaro.fans</span>
+            <span className="font-heading text-2xl font-bold">Menia.io</span>
           </div>
-          <h1 className="font-heading text-3xl font-bold mb-2">Area Creator</h1>
+          <h1 className="font-heading text-3xl font-bold mb-2">Area Formatori</h1>
           <p className="text-muted-foreground text-sm">
-            Accedi alla tua dashboard per gestire contenuti, fan e guadagni.
+            Accedi alla tua dashboard per gestire corsi, studenti e community.
           </p>
+          <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
+            <span className="text-base">🎁</span>
+            <span className="text-xs font-semibold text-primary">
+              1 mese di Starter incluso per i nuovi iscritti
+            </span>
+          </div>
         </div>
 
         <div className="bg-card/60 border border-border/40 rounded-2xl p-8 backdrop-blur-sm">
@@ -82,7 +88,7 @@ export default function CreatorPortal() {
                   Il tuo account non ha i permessi di creator. Contatta il supporto o registrati come creator.
                 </p>
               </div>
-              <Button variant="outline" className="w-full border-border/50" onClick={() => { logout(); navigate('/creator-login'); }}>
+              <Button variant="outline" className="w-full border-border/50" onClick={async () => { await logout(); navigate('/trainer-login'); }}>
                 Esci e cambia account
               </Button>
             </div>
@@ -111,9 +117,9 @@ export default function CreatorPortal() {
 
               <div className="mt-4 text-center">
                 <p className="text-xs text-muted-foreground">
-                  Sei un fan?{" "}
-                  <Link to="/fan-portal" className="text-primary hover:underline font-medium">
-                    Accedi all'area fan
+                  Sei uno studente?{" "}
+                  <Link to="/student-portal" className="text-primary hover:underline font-medium">
+                    Accedi all'area studenti
                   </Link>
                 </p>
               </div>
@@ -122,7 +128,7 @@ export default function CreatorPortal() {
         </div>
 
         <p className="text-center text-xs text-muted-foreground mt-6">
-          © 2026 Tokaro.fans · Tutti i diritti riservati
+          © 2026 Menia.io · Tutti i diritti riservati
         </p>
       </motion.div>
     </div>

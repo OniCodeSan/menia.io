@@ -1,188 +1,109 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Play, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowRight, Sparkles, Check } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/lib/LanguageContext";
-import TToken from "@/components/shared/TToken";
 
+// Menia Hero — copy-driven, single CTA, tighter padding.
+// Spec: rimosso "Diventa creator" (il funnel formatore vive in navbar).
+//        H1 + subtitle benefit-driven (cosa ottieni, non chi siamo).
+//        Visual a destra mantenuto come prova sociale, dati spostati in TrustBar.
 export default function HeroSection() {
   const { t } = useLanguage();
   const h = t.hero;
 
   return (
-    <section className="relative min-h-[80vh] sm:min-h-[90vh] flex items-center overflow-x-hidden overflow-y-visible">
-      {/* Background effects */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-48 sm:w-96 h-48 sm:h-96 bg-primary/20 rounded-full blur-3xl animate-pulse-glow" />
-        <div className="absolute bottom-1/4 right-1/4 w-40 sm:w-80 h-40 sm:h-80 bg-accent/15 rounded-full blur-3xl animate-pulse-glow" style={{ animationDelay: "1.5s" }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 sm:w-[600px] h-72 sm:h-[600px] bg-primary/5 rounded-full blur-3xl" />
-      </div>
-
-      {/* Grid overlay */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(139,92,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(139,92,246,0.03)_1px,transparent_1px)] bg-[size:60px_60px]" />
-
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-20 w-full">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          {/* Text content */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-          >
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 }}
-              className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full border border-primary/30 bg-primary/10 mb-8 max-w-full"
-            >
-              <Sparkles className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium text-primary">{h.badge}</span>
-            </motion.div>
-
-            <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-6">
-              {h.title1}{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent glow-text">
-                {h.title2}
-              </span>
-            </h1>
-            
-            <p className="text-lg text-muted-foreground max-w-lg mb-10 leading-relaxed">
-              {h.subtitle}
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Link to="/creator-onboarding" className="inline-flex items-center justify-center bg-primary hover:bg-primary/90 glow-primary font-semibold text-base px-8 h-12 rounded-md text-primary-foreground w-full sm:w-auto group">
-                {h.cta1}
-                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <Link to="/explore" className="inline-flex items-center justify-center border border-border/50 hover:bg-secondary font-medium text-base px-8 h-12 rounded-md w-full sm:w-auto group">
-                <Play className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
-                {h.cta2}
-              </Link>
-            </div>
-
-            {/* Social proof */}
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.6 }}
-              className="mt-12 flex items-center gap-6"
-            >
-              <div className="flex -space-x-3">
-                {[
-                  "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face",
-                  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
-                  "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&h=100&fit=crop&crop=face",
-                  "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&h=100&fit=crop&crop=face",
-                ].map((src, i) => (
-                  <img
-                    key={i}
-                    src={src}
-                    alt=""
-                    className="w-10 h-10 rounded-full border-2 border-background object-cover"
-                  />
-                ))}
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-foreground">{h.socialProof1}</p>
-                <p className="text-xs text-muted-foreground">{h.socialProof2}</p>
-              </div>
-            </motion.div>
-          </motion.div>
-
-          {/* Visual — desktop: full image + floating card */}
-          <motion.div
-            initial={{ opacity: 0, x: 40 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-            className="relative hidden lg:block"
-          >
-            <div className="relative">
-              <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 to-accent/20 rounded-3xl blur-2xl" />
-              <div className="relative rounded-2xl overflow-hidden border border-border/50">
-                <img
-                  src="/hero-creator.jpg"
-                  alt="Creator dashboard"
-                  className="w-full h-[500px] object-cover"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
-
-                {/* Floating card */}
-                <div className="absolute bottom-8 left-6 right-6 glass rounded-xl p-4 border border-border/50">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face"
-                        alt="Sara Rossi"
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
-                      <div>
-                        <p className="text-sm font-semibold">Sara Rossi</p>
-                        <p className="text-xs text-muted-foreground">@sararossi</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-lg font-bold text-primary">84.000 <TToken /></p>
-                      <p className="text-xs text-muted-foreground">questo mese</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <div className="flex-1 bg-primary/20 rounded-lg p-2 text-center">
-                      <p className="text-xs text-muted-foreground">Fan</p>
-                      <p className="text-sm font-bold">2.4K</p>
-                    </div>
-                    <div className="flex-1 bg-accent/20 rounded-lg p-2 text-center">
-                      <p className="text-xs text-muted-foreground">Premium</p>
-                      <p className="text-sm font-bold">840</p>
-                    </div>
-                    <div className="flex-1 bg-chart-3/20 rounded-lg p-2 text-center">
-                      <p className="text-xs text-muted-foreground">Conv.</p>
-                      <p className="text-sm font-bold">35%</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Visual — mobile: compact social proof card */}
+    <section className="relative pt-2 sm:pt-3 lg:pt-4 pb-10 sm:pb-14 overflow-hidden">
+      <div className="relative max-w-6xl mx-auto px-4 sm:px-6">
+        <div className="grid lg:grid-cols-[1.1fr_1fr] gap-8 lg:gap-12 items-center">
+          {/* Text */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="lg:hidden"
+            transition={{ duration: 0.6, ease: "easeOut" }}
           >
-            <div className="glass rounded-xl p-4 border border-border/50">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <img
-                    src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face"
-                    alt="Sara Rossi"
-                    className="w-9 h-9 rounded-full object-cover"
-                  />
-                  <div>
-                    <p className="text-sm font-semibold">Sara Rossi</p>
-                    <p className="text-[11px] text-muted-foreground">@sararossi</p>
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 mb-4 text-xs">
+              <Sparkles className="w-3.5 h-3.5 text-primary" />
+              <span className="font-semibold text-primary">{h.badgePrefix}</span>
+              <span className="text-foreground/80">{h.badge}</span>
+            </span>
+
+            <h1 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-bold leading-[1.1] tracking-tight mb-5 text-balance">
+              {h.title1}{" "}
+              <span className="text-primary">{h.title2}</span>
+            </h1>
+
+            <p className="text-base sm:text-lg text-muted-foreground max-w-xl mb-6 leading-relaxed">
+              {h.subtitle}
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3 mb-5">
+              <Link to="/courses">
+                <Button size="lg" className="group">
+                  {h.cta1}
+                  <ArrowRight className="w-4 h-4 ml-1.5 group-hover:translate-x-0.5 transition-transform" />
+                </Button>
+              </Link>
+              <Link to="/trainer-login?mode=register">
+                <Button size="lg" variant="ghost">
+                  Diventa formatore
+                </Button>
+              </Link>
+            </div>
+
+            {/* Concrete reassurances — più forti di una row di avatar senza numero.
+                Niente promesse vaghe: tre fatti verificabili sul prodotto. */}
+            <motion.ul
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground"
+            >
+              {["Anteprima gratuita su ogni corso", "Nessuna carta richiesta", "Cancelli quando vuoi"].map((label) => (
+                <li key={label} className="inline-flex items-center gap-1.5">
+                  <Check className="w-4 h-4 text-chart-3 shrink-0" />
+                  {label}
+                </li>
+              ))}
+            </motion.ul>
+          </motion.div>
+
+          {/* Visual: lighter card, keeps the "this is what a real creator looks like"
+              social-proof angle without the heavy gradient blur halos */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.2 }}
+            className="hidden lg:block"
+          >
+            <div className="relative bg-card border border-border rounded-2xl overflow-hidden shadow-card">
+              <img
+                src="/hero-creator.jpg"
+                alt=""
+                className="w-full aspect-[4/5] object-cover"
+                loading="lazy"
+              />
+              <div className="absolute bottom-4 left-4 right-4 bg-card/95 backdrop-blur rounded-xl p-4 border border-border">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <img
+                      src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&crop=face"
+                      alt="Sara Rossi"
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                    <div>
+                      <p className="text-sm font-semibold">Sara Rossi</p>
+                      <p className="text-xs text-muted-foreground">Marketing & Branding</p>
+                    </div>
                   </div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded bg-primary/10 text-primary">
+                    Featured
+                  </span>
                 </div>
-                <div className="text-right">
-                  <p className="text-base font-bold text-primary">84.000 <TToken /></p>
-                  <p className="text-[10px] text-muted-foreground">questo mese</p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <div className="flex-1 bg-primary/20 rounded-lg p-2 text-center">
-                  <p className="text-[10px] text-muted-foreground">Fan</p>
-                  <p className="text-sm font-bold">2.4K</p>
-                </div>
-                <div className="flex-1 bg-accent/20 rounded-lg p-2 text-center">
-                  <p className="text-[10px] text-muted-foreground">Premium</p>
-                  <p className="text-sm font-bold">840</p>
-                </div>
-                <div className="flex-1 bg-chart-3/20 rounded-lg p-2 text-center">
-                  <p className="text-[10px] text-muted-foreground">Conv.</p>
-                  <p className="text-sm font-bold">35%</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <Stat label="Studenti" value="2.4K" />
+                  <Stat label="Lezioni" value="42" />
+                  <Stat label="Live" value="8" />
                 </div>
               </div>
             </div>
@@ -190,5 +111,14 @@ export default function HeroSection() {
         </div>
       </div>
     </section>
+  );
+}
+
+function Stat({ label, value }) {
+  return (
+    <div className="bg-secondary rounded-lg p-2 text-center">
+      <p className="text-[10px] text-muted-foreground">{label}</p>
+      <p className="text-sm font-bold">{value}</p>
+    </div>
   );
 }

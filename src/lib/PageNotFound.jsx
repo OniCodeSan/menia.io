@@ -6,7 +6,7 @@ import SEO from "@/components/shared/SEO";
 export default function PageNotFound() {
   return (
     <div className="min-h-screen flex items-center justify-center p-6">
-      <SEO title="404" description="Pagina non trovata" />
+      <SEO title="Pagina non trovata" description="Pagina non trovata" />
       <div className="max-w-md w-full text-center space-y-6">
         <div className="space-y-2">
           <h1 className="text-7xl font-heading font-bold text-muted-foreground/20">404</h1>

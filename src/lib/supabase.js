@@ -5,19 +5,26 @@ const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 export const hasSupabase = Boolean(url && anonKey);
 
-if (!hasSupabase && typeof window !== "undefined") {
-  console.warn(
-    "[supabase] VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY non configurate. " +
-      "Il backend remoto è disabilitato — creare un progetto e copiare le chiavi in .env.local."
-  );
+if (!hasSupabase) {
+  if (import.meta.env.PROD) {
+    // Fail loud in production builds — no silent localStorage fallback.
+    throw new Error(
+      "VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY missing — refusing to start without backend"
+    );
+  }
+  if (typeof window !== "undefined") {
+    console.warn(
+      "[supabase] VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY non configurate (dev mode)."
+    );
+  }
 }
 
 const AUTH_CONFIG = {
   persistSession: true,
   autoRefreshToken: true,
   detectSessionInUrl: true,
-  storageKey: "tokaro:sb",
-  flowType: "implicit",
+  storageKey: "menia:sb",
+  flowType: "pkce",
 };
 
 let _supabase = null;
@@ -43,7 +50,7 @@ if (_supabase) {
       console.error("[supabase] Auth is broken — clearing session and reloading.");
       try {
         Object.keys(localStorage)
-          .filter((k) => k.startsWith("tokaro:sb"))
+          .filter((k) => k.startsWith("menia:sb"))
           .forEach((k) => localStorage.removeItem(k));
       } catch {}
       _healthy = false;

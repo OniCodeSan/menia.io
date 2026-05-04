@@ -42,7 +42,7 @@ export default function ReportDialog({
     e.preventDefault();
     setError("");
     if (!user) {
-      navigate("/fan-login");
+      navigate("/student-login");
       return;
     }
     setSubmitting(true);
@@ -73,7 +73,7 @@ export default function ReportDialog({
             Segnala {targetName || "utente"}
           </DialogTitle>
           <DialogDescription className="text-muted-foreground text-sm">
-            Aiutaci a tenere Tokaro.fans sicura. I report sono anonimi e gestiti dal team moderazione.
+            Aiutaci a tenere Menia.io sicura. I report sono anonimi e gestiti dal team moderazione.
           </DialogDescription>
         </DialogHeader>
 

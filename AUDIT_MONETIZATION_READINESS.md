@@ -1,12 +1,12 @@
 ---
-title: Tokaro Monetization & Creator Upsell — Technical Readiness Audit
+title: Menia Monetization & Creator Upsell — Technical Readiness Audit
 date: 2026-04-18
 status: AUDIT ONLY — no implementation
 ---
 
 # Executive Summary
 
-Tokaro has a functional token economy, wallet system, content gating, subscriptions, and admin tooling. However, it has **zero concept of creator plans** (free/start/grow/pro). The entire platform currently operates as a single-tier creator model where all creators have the same capabilities. There is no database column, no service logic, and no UI gating that differentiates a free creator from a paid one. This is the single largest structural gap.
+Menia has a functional token economy, wallet system, content gating, subscriptions, and admin tooling. However, it has **zero concept of creator plans** (free/start/grow/pro). The entire platform currently operates as a single-tier creator model where all creators have the same capabilities. There is no database column, no service logic, and no UI gating that differentiates a free creator from a paid one. This is the single largest structural gap.
 
 Secondary gaps: the DM system has no paid-message monetization, the earnings ledger does not track platform spread, creator earnings from subscriptions are not credited automatically, and the admin console cannot assign creator plans or toggle feature access.
 

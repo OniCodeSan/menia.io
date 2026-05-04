@@ -13,4 +13,4 @@ Disallow: /fan-portal
 Disallow: /forgot-password
 Disallow: /reset-password
 
-Sitemap: https://tokaro.fans/sitemap.xml
+Sitemap: https://menia.io/sitemap.xml

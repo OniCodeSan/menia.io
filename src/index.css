@@ -1,82 +1,98 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* =========================================================================
+ * Menia design tokens
+ *  Brand: clean SaaS, flat, blue accent, generous spacing.
+ *  Palette source-of-truth (hex → HSL pairs):
+ *    primary blue    #3B82F6 → 217 91% 60%
+ *    dark blue       #1E3A8A → 224 64% 33%
+ *    text primary    #0F172A → 222 47% 11%
+ *    text secondary  #64748B → 215 16% 47%
+ *    background      #FFFFFF → 0 0% 100%
+ *    border          #E2E8F0 → 214 32% 91%
+ *    hover gray      #F8FAFC → 210 40% 98%
+ *    sidebar active  #F1F5F9 → 210 40% 96%
+ * Spacing scale (Tailwind defaults align): 1=4 / 2=8 / 3=12 / 4=16 / 6=24 / 8=32 / 12=48
+ * Radius: 8px (Tailwind rounded-lg) for buttons/inputs, 12px (rounded-xl) for cards.
+ * ========================================================================= */
+
 @layer base {
   :root {
-    --font-heading: 'Space Grotesk', sans-serif;
-    --font-body: 'Inter', sans-serif;
+    --font-heading: 'Inter', system-ui, sans-serif;
+    --font-body: 'Inter', system-ui, sans-serif;
 
-    --background: 260 20% 4%;
-    --foreground: 0 0% 95%;
-    --card: 260 18% 8%;
-    --card-foreground: 0 0% 95%;
-    --popover: 260 18% 8%;
-    --popover-foreground: 0 0% 95%;
-    --primary: 265 90% 60%;
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 260 15% 14%;
-    --secondary-foreground: 0 0% 90%;
-    --muted: 260 12% 12%;
-    --muted-foreground: 260 8% 55%;
-    --accent: 210 100% 55%;
+    --secondary: 210 40% 98%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 224 64% 33%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 260 15% 16%;
-    --input: 260 15% 16%;
-    --ring: 265 90% 60%;
-    --chart-1: 265 90% 60%;
-    --chart-2: 210 100% 55%;
-    --chart-3: 180 70% 50%;
-    --chart-4: 45 90% 60%;
-    --chart-5: 330 80% 60%;
-    --radius: 0.75rem;
-    --sidebar-background: 260 18% 6%;
-    --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 265 90% 60%;
+    --destructive: 0 78% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 217 91% 60%;
+    --chart-1: 217 91% 60%;
+    --chart-2: 224 64% 33%;
+    --chart-3: 142 71% 45%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 0 78% 50%;
+    --radius: 0.5rem;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 260 15% 14%;
-    --sidebar-accent-foreground: 0 0% 90%;
-    --sidebar-border: 260 15% 16%;
-    --sidebar-ring: 265 90% 60%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 217 91% 60%;
+    --sidebar-border: 214 32% 91%;
+    --sidebar-ring: 217 91% 60%;
   }
 
   .dark {
-    --background: 260 20% 4%;
-    --foreground: 0 0% 95%;
-    --card: 260 18% 8%;
-    --card-foreground: 0 0% 95%;
-    --popover: 260 18% 8%;
-    --popover-foreground: 0 0% 95%;
-    --primary: 265 90% 60%;
+    --background: 222 47% 6%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 8%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 8%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 260 15% 14%;
-    --secondary-foreground: 0 0% 90%;
-    --muted: 260 12% 12%;
-    --muted-foreground: 260 8% 55%;
-    --accent: 210 100% 55%;
+    --secondary: 217 33% 14%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 33% 14%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 217 91% 60%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 260 15% 16%;
-    --input: 260 15% 16%;
-    --ring: 265 90% 60%;
-    --chart-1: 265 90% 60%;
-    --chart-2: 210 100% 55%;
-    --chart-3: 180 70% 50%;
-    --chart-4: 45 90% 60%;
-    --chart-5: 330 80% 60%;
-    --sidebar-background: 260 18% 6%;
-    --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 265 90% 60%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 217 33% 18%;
+    --input: 217 33% 18%;
+    --ring: 217 91% 60%;
+    --chart-1: 217 91% 60%;
+    --chart-2: 213 94% 78%;
+    --chart-3: 142 71% 50%;
+    --chart-4: 38 92% 60%;
+    --chart-5: 0 78% 60%;
+    --sidebar-background: 222 47% 6%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 260 15% 14%;
-    --sidebar-accent-foreground: 0 0% 90%;
-    --sidebar-border: 260 15% 16%;
-    --sidebar-ring: 265 90% 60%;
+    --sidebar-accent: 217 33% 14%;
+    --sidebar-accent-foreground: 217 91% 60%;
+    --sidebar-border: 217 33% 18%;
+    --sidebar-ring: 217 91% 60%;
   }
 }
 
@@ -86,35 +102,40 @@
   }
 
   body {
-    @apply bg-background text-foreground font-body;
+    @apply bg-background text-foreground font-body antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  h1, h2, h3, h4, h5, h6, .font-heading {
+    font-family: var(--font-heading);
+    letter-spacing: -0.01em;
   }
 }
 
-/* Custom utilities */
+/* Utilities — kept as no-ops or subtle to preserve existing class usages
+ * without reintroducing heavy gradients / glows. The Menia spec is flat. */
 @layer utilities {
-  .glow-primary {
-    box-shadow: 0 0 20px hsl(265 90% 60% / 0.3), 0 0 60px hsl(265 90% 60% / 0.1);
-  }
-  .glow-accent {
-    box-shadow: 0 0 20px hsl(210 100% 55% / 0.3), 0 0 60px hsl(210 100% 55% / 0.1);
-  }
-  .glow-text {
-    text-shadow: 0 0 30px hsl(265 90% 60% / 0.5);
-  }
+  .glow-primary { box-shadow: 0 1px 2px hsl(217 91% 60% / 0.06); }
+  .glow-accent  { box-shadow: 0 1px 2px hsl(224 64% 33% / 0.06); }
+  .glow-text    { /* no-op: flat type */ }
   .glass {
-    background: hsl(260 18% 8% / 0.6);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    background: hsl(0 0% 100% / 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
   .glass-strong {
-    background: hsl(260 18% 8% / 0.85);
-    backdrop-filter: blur(30px);
-    -webkit-backdrop-filter: blur(30px);
+    background: hsl(0 0% 100% / 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
   .pt-safe {
     padding-top: env(safe-area-inset-top, 0px);
   }
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  /* Soft shadow utility for cards (Menia spec: subtle only) */
+  .shadow-card {
+    box-shadow: 0 1px 2px hsl(222 47% 11% / 0.04), 0 1px 3px hsl(222 47% 11% / 0.05);
   }
 }

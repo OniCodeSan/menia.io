@@ -1,12 +1,11 @@
 import { useState, useRef, useEffect, useId } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Send, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase, hasSupabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/AuthContext";
-import { processPaidMessage } from "@/lib/monetization";
 
 export default function ChatWindow({ conversation, onBack }) {
   const { user } = useAuth();
@@ -30,7 +29,7 @@ export default function ChatWindow({ conversation, onBack }) {
       .order("created_at", { ascending: true })
       .limit(200)
       .then(({ data, error }) => {
-        if (error) console.warn("[ChatWindow] load messages:", error.message);
+        if (error) console.warn("[ChatWindow] load:", error.message);
         setMessages(data || []);
         setLoading(false);
       });
@@ -41,45 +40,34 @@ export default function ChatWindow({ conversation, onBack }) {
       .eq("sender_id", partnerId)
       .eq("receiver_id", user.id)
       .eq("read", false)
-      .then(({ error }) => {
-        if (error) console.warn("[ChatWindow] mark read:", error.message);
-      });
+      .then(() => {});
 
     const channelName = `dm-${[user.id, partnerId].sort().join("-")}-${instanceId.replace(/:/g, "")}`;
     const channel = supabase
       .channel(channelName)
-      .on(
-        "postgres_changes",
+      .on("postgres_changes",
         { event: "INSERT", schema: "public", table: "direct_messages" },
         (payload) => {
           const msg = payload.new;
-          const isRelevant =
+          const relevant =
             (msg.sender_id === user.id && msg.receiver_id === partnerId) ||
             (msg.sender_id === partnerId && msg.receiver_id === user.id);
-          if (!isRelevant) return;
-
+          if (!relevant) return;
           setMessages((prev) => {
-            const withoutOptimistic = prev.filter((m) => !m._optimistic || m.sender_id !== msg.sender_id || m.message !== msg.message);
-            return [...withoutOptimistic, msg];
+            const filtered = prev.filter((m) => !m._optimistic || m.sender_id !== msg.sender_id || m.message !== msg.message);
+            return [...filtered, msg];
           });
-
           if (msg.sender_id === partnerId) {
-            supabase.from("direct_messages").update({ read: true }).eq("id", msg.id).then(({ error }) => {
-              if (error) console.warn("[ChatWindow] mark read (realtime):", error.message);
-            });
+            supabase.from("direct_messages").update({ read: true }).eq("id", msg.id).then(() => {});
           }
         }
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [user, partnerId, instanceId]);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
   const sendMessage = async () => {
     if (!input.trim() || !user || !partnerId || !hasSupabase) return;
@@ -99,22 +87,16 @@ export default function ChatWindow({ conversation, onBack }) {
     setMessages((prev) => [...prev, optimistic]);
 
     try {
-      let cost = 0;
-      if (conversation.role === "creator") {
-        const result = await processPaidMessage(user.id, partnerId);
-        cost = result.cost;
-      }
-
       const { error } = await supabase.from("direct_messages").insert({
         sender_id: user.id,
         receiver_id: partnerId,
         message: text,
-        cost,
       });
       if (error) console.error("[DM] insert error:", error.message);
     } catch (err) {
       console.error("[DM] send error:", err);
       setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
+      setInput(text);
     } finally {
       setSending(false);
     }
@@ -136,17 +118,11 @@ export default function ChatWindow({ conversation, onBack }) {
         <Button variant="ghost" size="icon" onClick={onBack} className="md:hidden w-8 h-8 shrink-0">
           <ArrowLeft className="w-4 h-4" />
         </Button>
-        <img
-          src={conversation.avatar}
-          alt={conversation.name}
-          className="w-10 h-10 rounded-full object-cover"
-        />
+        <img src={conversation.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <p className="text-sm font-semibold">{conversation.name}</p>
-            {roleLabel && (
-              <Badge className="text-[10px] bg-primary/20 text-primary border-primary/30">{roleLabel}</Badge>
-            )}
+            {roleLabel && <Badge className="text-[10px] bg-primary/20 text-primary border-primary/30">{roleLabel}</Badge>}
           </div>
         </div>
       </div>
@@ -157,9 +133,7 @@ export default function ChatWindow({ conversation, onBack }) {
             <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
           </div>
         ) : messages.length === 0 ? (
-          <p className="text-xs text-muted-foreground text-center py-8">
-            Nessun messaggio. Inizia la conversazione!
-          </p>
+          <p className="text-xs text-muted-foreground text-center py-8">Nessun messaggio. Inizia la conversazione!</p>
         ) : (
           messages.map((msg) => (
             <motion.div
@@ -172,20 +146,11 @@ export default function ChatWindow({ conversation, onBack }) {
                 src={isMe(msg)
                   ? (user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.full_name || "U")}&background=7c3aed&color=fff&size=100`)
                   : conversation.avatar}
-                alt=""
-                className="w-7 h-7 rounded-full object-cover shrink-0"
+                alt="" className="w-7 h-7 rounded-full object-cover shrink-0"
               />
-              <div
-                className={`rounded-2xl px-4 py-2.5 max-w-[75%] ${
-                  isMe(msg)
-                    ? "bg-primary text-primary-foreground rounded-br-sm"
-                    : "bg-secondary/80 rounded-bl-sm"
-                }`}
-              >
+              <div className={`rounded-2xl px-4 py-2.5 max-w-[75%] ${isMe(msg) ? "bg-primary text-primary-foreground rounded-br-sm" : "bg-secondary/80 rounded-bl-sm"}`}>
                 <p className="text-sm">{msg.message}</p>
-                <p className={`text-[10px] mt-1 text-right ${isMe(msg) ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
-                  {formatTime(msg.created_at)}
-                </p>
+                <p className={`text-[10px] mt-1 text-right ${isMe(msg) ? "text-primary-foreground/60" : "text-muted-foreground"}`}>{formatTime(msg.created_at)}</p>
               </div>
             </motion.div>
           ))
@@ -203,12 +168,7 @@ export default function ChatWindow({ conversation, onBack }) {
             className="flex-1 bg-secondary/40 border-border/30 h-10"
             disabled={sending}
           />
-          <Button
-            onClick={sendMessage}
-            disabled={!input.trim() || sending}
-            size="icon"
-            className="h-10 w-10 bg-primary hover:bg-primary/90 shrink-0"
-          >
+          <Button onClick={sendMessage} disabled={!input.trim() || sending} size="icon" className="h-10 w-10 bg-primary hover:bg-primary/90 shrink-0">
             <Send className="w-4 h-4" />
           </Button>
         </div>
@@ -220,9 +180,7 @@ export default function ChatWindow({ conversation, onBack }) {
 function formatTime(dateStr) {
   if (!dateStr) return "";
   const d = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now - d;
-  const diffDays = Math.floor(diffMs / 86400000);
+  const diffDays = Math.floor((Date.now() - d.getTime()) / 86400000);
   if (diffDays === 0) return d.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
   if (diffDays === 1) return "ieri";
   return d.toLocaleDateString("it-IT", { day: "numeric", month: "short" });

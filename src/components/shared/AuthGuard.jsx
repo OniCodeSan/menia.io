@@ -18,8 +18,8 @@ export default function AuthGuard({ children, allowedRoles = undefined }) {
 
   if (!user) {
     const target = allowedRoles?.includes("creator") || allowedRoles?.includes("admin")
-      ? "/creator-login"
-      : "/fan-login";
+      ? "/trainer-login"
+      : "/student-login";
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 px-4 text-center">
         <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center">
@@ -56,9 +56,9 @@ export default function AuthGuard({ children, allowedRoles = undefined }) {
         <div>
           <h2 className="font-heading text-2xl font-bold mb-2">Area non accessibile</h2>
           {isCreatorInFanArea ? (
-            <p className="text-muted-foreground text-sm max-w-xs">Sei loggato come Creator. Vai alla tua dashboard.</p>
+            <p className="text-muted-foreground text-sm max-w-xs">Sei loggato come Formatore. Vai alla tua dashboard.</p>
           ) : isFanInCreatorArea ? (
-            <p className="text-muted-foreground text-sm max-w-xs">Sei loggato come Fan. Questa sezione è riservata ai Creator.</p>
+            <p className="text-muted-foreground text-sm max-w-xs">Sei loggato come Studente. Questa sezione è riservata ai Formatori.</p>
           ) : (
             <p className="text-muted-foreground text-sm max-w-xs">Non hai i permessi per accedere a questa sezione.</p>
           )}
@@ -66,19 +66,19 @@ export default function AuthGuard({ children, allowedRoles = undefined }) {
         <div className="flex flex-col sm:flex-row gap-3">
           {isCreatorInFanArea ? (
             <Link to="/dashboard">
-              <Button className="bg-primary hover:bg-primary/90 glow-primary">Vai alla Dashboard Creator</Button>
+              <Button className="bg-primary hover:bg-primary/90 glow-primary">Vai alla Dashboard Formatore</Button>
             </Link>
           ) : isFanInCreatorArea ? (
             <>
-              <Link to="/creator-onboarding">
-                <Button className="bg-primary hover:bg-primary/90 glow-primary">Diventa Creator</Button>
+              <Link to="/trainer-login?mode=register">
+                <Button className="bg-primary hover:bg-primary/90 glow-primary">Diventa Formatore</Button>
               </Link>
-              <Link to="/fan-dashboard">
-                <Button variant="outline" className="border-border/50">La mia area fan</Button>
+              <Link to="/student-dashboard">
+                <Button variant="outline" className="border-border/50">La mia area</Button>
               </Link>
             </>
           ) : (
-            <Link to="/explore">
+            <Link to="/courses">
               <Button variant="outline" className="border-border/50">Esplora contenuti</Button>
             </Link>
           )}

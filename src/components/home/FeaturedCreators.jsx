@@ -1,113 +1,136 @@
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Star, Crown } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useLanguage } from "@/lib/LanguageContext";
-import { supabase, hasSupabase } from "@/lib/supabase";
+import { ArrowRight, GraduationCap } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
+// FeaturedCreators — top creator per visibility_score (proxy server-side
+// per "qualità di engagement"), arricchiti con i campi vetrina di
+// creator_profiles. Niente curatela manuale finché non c'è un campo
+// `is_featured` dedicato — il ranking algoritmico è sufficiente per ora.
 export default function FeaturedCreators() {
-  const { t } = useLanguage();
-  const f = t.featured;
-  const [creators, setCreators] = useState([]);
+  const [creators, setCreators] = useState(null);
 
   useEffect(() => {
-    if (!hasSupabase) return;
+    let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, full_name, handle, avatar_url, bio, role")
-        .eq("role", "creator")
-        .limit(4);
-      if (data) {
-        setCreators(data.map((p) => ({
-          handle: p.handle || p.id.slice(0, 8),
-          name: p.full_name || "Creator",
-          avatar: p.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.full_name || "C")}&background=7c3aed&color=fff`,
-          category: "",
-          fansLabel: "0",
-          rating: 0,
-        })));
+      // Step 1: top 6 creator per visibility_score
+      const { data: kpiRows } = await supabase
+        .from("creator_kpi_aggregated")
+        .select("creator_id, total_courses, total_students, visibility_score")
+        .gt("total_courses", 0)
+        .order("visibility_score", { ascending: false })
+        .limit(6);
+
+      if (cancelled || !kpiRows?.length) {
+        if (!cancelled) setCreators([]);
+        return;
       }
-    })();
+      const ids = kpiRows.map((r) => r.creator_id);
+      const [profRes, extraRes] = await Promise.all([
+        supabase.from("profiles").select("id, full_name, handle, avatar_url").in("id", ids),
+        supabase.from("creator_profiles").select("user_id, channel_name, profile_image_url, bio").in("user_id", ids),
+      ]);
+      const byId = {};
+      (profRes.data || []).forEach((p) => { byId[p.id] = { ...byId[p.id], profile: p }; });
+      (extraRes.data || []).forEach((e) => { byId[e.user_id] = { ...byId[e.user_id], extra: e }; });
+
+      const merged = kpiRows
+        .map((k) => {
+          const p = byId[k.creator_id]?.profile;
+          if (!p) return null;
+          const e = byId[k.creator_id]?.extra;
+          return {
+            id: k.creator_id,
+            handle: p.handle || k.creator_id.slice(0, 8),
+            name: e?.channel_name || p.full_name || "Creator",
+            avatar: e?.profile_image_url || p.avatar_url || null,
+            bio: (e?.bio || "").trim(),
+            courses: k.total_courses || 0,
+            students: k.total_students || 0,
+          };
+        })
+        .filter(Boolean)
+        .slice(0, 4);
+      if (!cancelled) setCreators(merged);
+    })().catch(() => { if (!cancelled) setCreators([]); });
+    return () => { cancelled = true; };
   }, []);
 
-  if (creators.length === 0) return null;
+  // Filtro qualità: solo formatori con avatar caricato (niente "C" placeholder).
+  // Layout adattivo: 1 → card singolo centrato max-w-sm; 2 → 2-col centrato;
+  // 3+ → griglia 4-col completa. Coerente con l'hero claim "da chi le usa
+  // ogni giorno": almeno un volto va sempre mostrato.
+  const real = (creators || []).filter((c) => !!c.avatar);
+  if (real.length === 0) return null;
 
-  const CreatorCard = ({ creator, i }) => (
-    <motion.div
-      key={creator.handle}
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ delay: i * 0.1 }}
-      className="snap-start shrink-0 w-[72vw] sm:w-auto"
-    >
-      <Link to={`/creator/${creator.handle}`} className="group block">
-        <div className="relative rounded-2xl overflow-hidden border border-border/30 hover:border-primary/40 transition-all duration-300">
-          <img
-            src={creator.avatar}
-            alt={creator.name}
-            className="w-full h-64 sm:h-72 object-cover group-hover:scale-105 transition-transform duration-500"
-            loading="lazy"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
-          <div className="absolute top-3 right-3 flex items-center gap-1 px-2.5 py-1 rounded-full glass text-xs font-medium">
-            <Crown className="w-3 h-3 text-primary" />
-            <span>{f.topCreator}</span>
-          </div>
-          <div className="absolute bottom-0 left-0 right-0 p-4">
-            <h3 className="font-heading font-bold text-base">{creator.name}</h3>
-            {creator.category && <p className="text-xs text-muted-foreground mb-2">{creator.category}</p>}
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">@{creator.handle}</span>
-              {creator.rating > 0 && (
-                <div className="flex items-center gap-1">
-                  <Star className="w-3 h-3 text-chart-4 fill-chart-4" />
-                  <span className="text-xs font-medium">{Number(creator.rating).toFixed(1)}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </Link>
-    </motion.div>
-  );
+  const gridCls =
+    real.length === 1 ? "max-w-sm mx-auto" :
+    real.length === 2 ? "grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto" :
+    "grid sm:grid-cols-2 lg:grid-cols-4 gap-4";
 
   return (
-    <section className="py-12 sm:py-24 px-4 sm:px-6 relative">
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-accent/5 to-transparent" />
-      <div className="max-w-7xl mx-auto relative">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-8 sm:mb-16"
-        >
-          <p className="text-primary font-semibold text-sm tracking-widest uppercase mb-3">{f.label}</p>
-          <h2 className="font-heading text-3xl sm:text-4xl font-bold">
-            {f.title1}{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">{f.title2}</span>
-          </h2>
-        </motion.div>
-
-        {creators.length === 1 ? (
-          <div className="max-w-sm mx-auto">
-            <CreatorCard creator={creators[0]} i={0} />
+    <section className="py-16 sm:py-20">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+        <div className="flex items-end justify-between mb-8 gap-4 flex-wrap">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-primary mb-2">Formatori</p>
+            <h2 className="font-heading text-2xl sm:text-3xl font-bold leading-tight tracking-tight">
+              Impara da chi lo fa davvero
+            </h2>
           </div>
-        ) : (
-          <>
-            <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-4 sm:hidden -mx-4 px-4">
-              {creators.map((creator, i) => (
-                <CreatorCard key={creator.handle} creator={creator} i={i} />
-              ))}
-            </div>
-            <div className={`hidden sm:grid gap-6 ${creators.length === 2 ? "sm:grid-cols-2 max-w-2xl mx-auto" : creators.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2 lg:grid-cols-4"}`}>
-              {creators.map((creator, i) => (
-                <CreatorCard key={creator.handle} creator={creator} i={i} />
-              ))}
-            </div>
-          </>
-        )}
+          <Link
+            to="/trainer"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
+          >
+            Scopri tutti i formatori
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+
+        <div className={gridCls}>
+          {real.map((c) => (
+            <Link
+              key={c.id}
+              to={`/trainer/${c.handle}`}
+              className="group bg-card border border-border rounded-xl p-5 hover:border-primary/40 transition-colors flex flex-col"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                {c.avatar ? (
+                  <img
+                    src={c.avatar}
+                    alt={c.name}
+                    className="w-12 h-12 rounded-full object-cover bg-secondary flex-shrink-0"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary font-bold">
+                    {c.name[0]?.toUpperCase()}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="font-heading font-bold text-sm truncate group-hover:text-primary transition-colors">
+                    {c.name}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">@{c.handle}</p>
+                </div>
+              </div>
+              {c.bio && (
+                <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed mb-3 flex-1">
+                  {c.bio}
+                </p>
+              )}
+              <div className="flex items-center gap-3 text-xs text-muted-foreground border-t border-border pt-3 mt-auto">
+                <span className="inline-flex items-center gap-1">
+                  <GraduationCap className="w-3.5 h-3.5" />
+                  {c.courses} cors{c.courses === 1 ? "o" : "i"}
+                </span>
+                {c.students > 0 && (
+                  <span>{c.students} student{c.students === 1 ? "e" : "i"}</span>
+                )}
+              </div>
+            </Link>
+          ))}
+        </div>
       </div>
     </section>
   );

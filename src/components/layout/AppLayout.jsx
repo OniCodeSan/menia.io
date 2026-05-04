@@ -2,10 +2,12 @@ import { Outlet, useLocation } from "react-router-dom";
 import Navbar from "./Navbar";
 import BottomNav from "./BottomNav";
 import Footer from "./Footer";
+import TrialBanner from "@/components/billing/TrialBanner";
 
 export default function AppLayout() {
   const location = useLocation();
   const isFeed = location.pathname === "/feed";
+  const isAuth = ["/student-login", "/trainer-login", "/forgot-password", "/reset-password"].includes(location.pathname);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -18,6 +20,7 @@ export default function AppLayout() {
         <Navbar />
       )}
       <main id="main-content" className={`${isFeed ? "pb-0 md:pt-16" : "pt-16 pb-20 md:pb-0"} flex-1`}>
+        {!isFeed && !isAuth && <div className="px-4"><TrialBanner /></div>}
         <Outlet />
       </main>
       {!isFeed && <Footer />}

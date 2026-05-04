@@ -5,8 +5,11 @@ const LanguageContext = createContext(null);
 
 export function LanguageProvider({ children }) {
   const [lang, setLang] = useState(() => {
-    const saved = localStorage.getItem("unlockr_lang");
-    if (saved && SUPPORTED_LANGS.includes(saved)) return saved;
+    const manual = localStorage.getItem("unlockr_lang_manual");
+    if (manual === "1") {
+      const saved = localStorage.getItem("unlockr_lang");
+      if (saved && SUPPORTED_LANGS.includes(saved)) return saved;
+    }
     return detectLanguage();
   });
   const [loading, setLoading] = useState(true);
@@ -18,27 +21,7 @@ export function LanguageProvider({ children }) {
       return;
     }
 
-    fetch("https://ipapi.co/json/", { signal: AbortSignal.timeout(3000) })
-      .then(r => r.json())
-      .then(data => {
-        const countryLangMap = {
-          IT: "it", FR: "fr", DE: "de", AT: "de", CH: "de",
-          ES: "es", MX: "es", AR: "es", CO: "es", CL: "es",
-          RU: "ru", BY: "ru", KZ: "ru",
-          GB: "en", US: "en", AU: "en", CA: "en", NZ: "en",
-          IE: "en", IN: "en", ZA: "en",
-          BE: "fr", LU: "fr", SN: "fr", CI: "fr",
-          PE: "es", VE: "es", EC: "es", UY: "es", PY: "es",
-          UA: "ru",
-        };
-        const detected = countryLangMap[data.country_code];
-        if (detected && SUPPORTED_LANGS.includes(detected)) {
-          setLang(detected);
-          localStorage.setItem("unlockr_lang", detected);
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    setLoading(false);
   }, []);
 
   const changeLanguage = (newLang) => {

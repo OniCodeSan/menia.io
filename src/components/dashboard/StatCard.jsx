@@ -1,29 +1,20 @@
 import { motion } from "framer-motion";
+import InfoTooltip from "@/components/ui/InfoTooltip";
 
-export default function StatCard({ title, value, trend, icon: Icon, delay = 0 }) {
-  const isPositive = trend?.startsWith("+");
-
+export default function StatCard({ title, value, icon: Icon, color = "text-primary", trend, hint }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay }}
-      className="bg-card/50 border border-border/30 rounded-2xl p-5 hover:border-primary/20 transition-all duration-300"
+      className="bg-card border border-border/30 rounded-2xl p-4"
     >
-      <div className="flex items-center justify-between mb-3">
-        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-          <Icon className="w-5 h-5 text-primary" />
-        </div>
-        {trend && (
-          <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
-            isPositive ? "bg-chart-3/10 text-chart-3" : "bg-destructive/10 text-destructive"
-          }`}>
-            {trend}
-          </span>
-        )}
-      </div>
-      <p className="text-2xl font-heading font-bold">{value}</p>
-      <p className="text-xs text-muted-foreground mt-1">{title}</p>
+      {Icon && <Icon className={`w-5 h-5 ${color} mb-2`} />}
+      <p className="text-2xl font-heading font-bold leading-none">{value}</p>
+      <p className="text-[11px] text-muted-foreground uppercase tracking-wide mt-1 inline-flex items-center gap-1">
+        {title}
+        {hint && <InfoTooltip text={hint} />}
+      </p>
+      {trend && <p className="text-[10px] text-chart-3 font-semibold mt-1">↑ {trend}</p>}
     </motion.div>
   );
 }

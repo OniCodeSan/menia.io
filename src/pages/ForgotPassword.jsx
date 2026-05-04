@@ -28,9 +28,9 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-accent/10 blur-[120px]" />
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden isolate">
+      <div className="absolute inset-0 pointer-events-none -z-10">
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[320px] h-[320px] rounded-full bg-primary/[0.06] blur-3xl" />
       </div>
 
       <motion.div
@@ -40,8 +40,8 @@ export default function ForgotPassword() {
       >
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2 mb-4">
-            <img src="/tokaro-logo.png" alt="Tokaro.fans" className="w-10 h-10 rounded-xl" />
-            <span className="font-heading text-2xl font-bold">Tokaro.fans</span>
+            <img src="/menia-logo.svg" alt="Menia.io" className="w-10 h-10 rounded-xl" />
+            <span className="font-heading text-2xl font-bold">Menia.io</span>
           </Link>
           <h1 className="font-heading text-3xl font-bold mb-2">Recupera password</h1>
           <p className="text-muted-foreground text-sm">
@@ -102,7 +102,7 @@ export default function ForgotPassword() {
         )}
 
         <div className="mt-6 text-center">
-          <Link to="/fan-login" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+          <Link to="/student-login" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
             <ArrowLeft className="w-3 h-3" />
             Torna al login
           </Link>

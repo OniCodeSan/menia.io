@@ -2,21 +2,25 @@
 <html lang="it">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/tokaro-logo.png" />
-    <link rel="apple-touch-icon" href="/tokaro-logo.png" />
+    <link rel="icon" type="image/svg+xml" href="/menia-favicon.svg" />
+    <link rel="alternate icon" type="image/png" href="/menia-logo.png" />
+    <link rel="apple-touch-icon" href="/menia-favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Tokaro.fans — Monetizza la tua community con abbonamenti e contenuti esclusivi</title>
-    <meta name="description" content="Tokaro.fans è la piattaforma per creator che vogliono monetizzare la propria community. Abbonamenti, contenuti premium, funnel automatici e CRM fan integrato." />
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content="Tokaro.fans — Monetizza la tua community" />
-    <meta property="og:description" content="La piattaforma per creator: abbonamenti, contenuti premium, funnel automatici e analytics avanzati." />
-    <meta property="og:image" content="https://tokaro.fans/tokaro-logo.png" />
-    <meta property="og:url" content="https://tokaro.fans" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Tokaro.fans — Monetizza la tua community" />
-    <meta name="twitter:description" content="La piattaforma per creator: abbonamenti, contenuti premium, funnel automatici e analytics avanzati." />
-    <meta name="twitter:image" content="https://tokaro.fans/tokaro-logo.png" />
-    <meta name="theme-color" content="#7c3aed" />
+    <title>Menia.io — Formazione online per creator e professionisti</title>
+    <meta name="theme-color" content="#0A1428" />
+    <!-- Anticipa TLS handshake verso Supabase: la prima query auth/profile
+         parte ~1.5–2s prima del normale, accorciando il cold start. -->
+    <link rel="preconnect" href="https://tqtqrzhmyaxsosgttzoa.supabase.co" crossorigin />
+    <link rel="dns-prefetch" href="https://tqtqrzhmyaxsosgttzoa.supabase.co" />
+    <!-- Content Security Policy.
+         script-src 'self'  → kills inline / external script injection (XSS)
+         connect-src        → frontend talks only to its own /api + Supabase + Sentry
+         frame-src          → only payment-provider checkouts may iframe in
+         object-src 'none'  → no Flash / legacy plugins
+         base-uri  'self'   → prevents <base> tag hijacking
+         upgrade-insecure-requests → auto-upgrades any leftover http:// link
+    -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://live.menia.io; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.ingest.sentry.io https://*.sentry.io https://live.menia.io wss://live.menia.io; worker-src 'self' blob:; frame-src 'self' https://*.stripe.com https://gumroad.com https://*.gumroad.com https://*.lemonsqueezy.com https://live.menia.io; form-action 'self' https://*.stripe.com https://gumroad.com https://*.gumroad.com https://*.lemonsqueezy.com; base-uri 'self'; object-src 'none'; upgrade-insecure-requests" />
   </head>
   <body>
     <div id="root"></div>

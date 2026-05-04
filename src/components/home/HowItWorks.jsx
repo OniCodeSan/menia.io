@@ -1,57 +1,55 @@
 import { motion } from "framer-motion";
-import { Upload, Zap, DollarSign } from "lucide-react";
+import { Search, PlayCircle, Target } from "lucide-react";
 import { useLanguage } from "@/lib/LanguageContext";
 
-const ICONS = [Upload, Zap, DollarSign];
-const GRADIENTS = ["from-primary/20 to-primary/5", "from-accent/20 to-accent/5", "from-chart-3/20 to-chart-3/5"];
-const ICON_COLORS = ["text-primary", "text-accent", "text-chart-3"];
-const STEP_NUMS = ["01", "02", "03"];
+// HowItWorks — 3 step icon-driven, copy action-oriented.
+// Spec Menia: outline icons grandi, no gradient pesanti, numerazione discreta.
+// Step 2 NON usa CreditCard: visivamente suggerisce "paga" ed è coerente
+// con il modello platform-subscription (l'utente non paga il singolo corso).
+const ICONS = [Search, PlayCircle, Target];
 
 export default function HowItWorks() {
   const { t } = useLanguage();
   const hw = t.howItWorks;
 
   return (
-    <section className="py-12 sm:py-24 px-4 sm:px-6 relative">
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent" />
-      
-      <div className="max-w-7xl mx-auto relative">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-8 sm:mb-16"
-        >
-          <p className="text-primary font-semibold text-sm tracking-widest uppercase mb-3">{hw.label}</p>
-          <h2 className="font-heading text-3xl sm:text-4xl font-bold">
-            {hw.title1}{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">{hw.title2}</span>
+    <section className="py-16 sm:py-20">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+        <div className="text-center mb-12 sm:mb-14">
+          <p className="text-xs font-bold uppercase tracking-wider text-primary mb-2">{hw.label}</p>
+          <h2 className="font-heading text-2xl sm:text-3xl lg:text-4xl font-bold leading-tight tracking-tight">
+            {hw.title1} <span className="text-primary">{hw.title2}</span>
           </h2>
-        </motion.div>
+        </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
+        {/* Step grid with connecting line on desktop */}
+        <div className="relative grid md:grid-cols-3 gap-6 md:gap-8">
+          {/* Connector line — sits behind cards on md+ */}
+          <div
+            className="hidden md:block absolute top-8 left-[16%] right-[16%] h-px bg-border"
+            aria-hidden
+          />
           {hw.steps.map((step, i) => {
             const Icon = ICONS[i];
             return (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.15 }}
-                className="group relative"
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ delay: i * 0.1, duration: 0.5 }}
+                className="relative bg-card border border-border rounded-xl p-6 hover:border-primary/40 transition-colors"
               >
-                <div className={`absolute inset-0 bg-gradient-to-br ${GRADIENTS[i]} rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
-                <div className="relative bg-card/50 border border-border/50 rounded-2xl p-8 hover:border-primary/30 transition-all duration-300">
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                      <Icon className={`w-6 h-6 ${ICON_COLORS[i]}`} />
-                    </div>
-                    <span className="text-4xl font-heading font-bold text-border/80">{STEP_NUMS[i]}</span>
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Icon className="w-6 h-6 text-primary" strokeWidth={1.75} />
                   </div>
-                  <h3 className="font-heading text-xl font-bold mb-3">{step.title}</h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">{step.description}</p>
+                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Passo {String(i + 1).padStart(2, "0")}
+                  </span>
                 </div>
+                <h3 className="font-heading text-lg font-bold mb-2 leading-tight">{step.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{step.description}</p>
               </motion.div>
             );
           })}

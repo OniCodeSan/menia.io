@@ -5,7 +5,23 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/lib/LanguageContext";
 
-const CONSENT_KEY = "tokaro:cookie_consent";
+const CONSENT_KEY = "menia:cookie_consent";
+const SESSION_ID_KEY = "menia:session_id";
+
+function getSessionId() {
+  let sid = sessionStorage.getItem(SESSION_ID_KEY);
+  if (!sid) {
+    if (crypto.randomUUID) {
+      sid = crypto.randomUUID();
+    } else {
+      const bytes = new Uint8Array(16);
+      crypto.getRandomValues(bytes);
+      sid = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+    }
+    sessionStorage.setItem(SESSION_ID_KEY, sid);
+  }
+  return sid;
+}
 
 const listeners = new Set();
 export function openCookieSettings() {
@@ -16,8 +32,19 @@ function getConsent() {
   try { return JSON.parse(localStorage.getItem(CONSENT_KEY)); } catch { return null; }
 }
 
-function setConsent(value) {
+function setConsent(value, action = "accept") {
   localStorage.setItem(CONSENT_KEY, JSON.stringify({ ...value, ts: Date.now() }));
+  fetch("/api/gdpr/consent", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      consent_type: "cookie",
+      categories: value,
+      action,
+      policy_version: "1.0",
+      session_id: getSessionId(),
+    }),
+  }).catch(() => {});
 }
 
 export function hasAnalyticsConsent() {
@@ -40,17 +67,17 @@ export default function CookieBanner() {
   }, []);
 
   const accept = () => {
-    setConsent({ necessary: true, analytics: true });
+    setConsent({ necessary: true, analytics: true }, "accept");
     setVisible(false);
   };
 
   const reject = () => {
-    setConsent({ necessary: true, analytics: false });
+    setConsent({ necessary: true, analytics: false }, "reject");
     setVisible(false);
   };
 
   const saveCustom = () => {
-    setConsent({ necessary: true, analytics });
+    setConsent({ necessary: true, analytics }, "update");
     setVisible(false);
   };
 
@@ -62,29 +89,25 @@ export default function CookieBanner() {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 100, opacity: 0 }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          className="fixed bottom-0 inset-x-0 z-[100] p-4 sm:p-6"
+          className="fixed bottom-3 left-3 right-3 sm:left-auto sm:right-4 sm:bottom-4 sm:max-w-md z-[100]"
         >
-          <div className="max-w-2xl mx-auto bg-card border border-border/50 rounded-2xl shadow-2xl overflow-hidden">
-            <div className="p-5 sm:p-6">
-              <div className="flex items-start gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-chart-4/10 flex items-center justify-center shrink-0">
-                  <Cookie className="w-5 h-5 text-chart-4" />
-                </div>
-                <div>
-                  <h3 className="font-heading font-bold text-base mb-1">{cb.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
+          <div className="bg-card border border-border/50 rounded-xl shadow-xl overflow-hidden">
+            <div className="p-4">
+              <div className="flex items-start gap-2.5 mb-3">
+                <Cookie className="w-4 h-4 text-chart-4 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <h3 className="font-heading font-bold text-sm mb-0.5">{cb.title}</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
                     {cb.description}
-                    {" "}{cb.readOur}{" "}
-                    <Link to="/cookie-policy" className="text-primary hover:underline">{cb.cookiePolicy}</Link>
-                    {" "}{cb.andThe}{" "}
-                    <Link to="/privacy" className="text-primary hover:underline">{cb.privacyPolicy}</Link>.
+                    {" "}<Link to="/cookie-policy" className="text-primary hover:underline">{cb.cookiePolicy}</Link>
+                    {" · "}<Link to="/privacy" className="text-primary hover:underline">{cb.privacyPolicy}</Link>
                   </p>
                 </div>
               </div>
 
               <button
                 onClick={() => setShowDetails(v => !v)}
-                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground mb-4 transition-colors"
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground mb-3 transition-colors"
               >
                 {showDetails ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                 {cb.customize}
@@ -129,15 +152,15 @@ export default function CookieBanner() {
 
               <div className="flex flex-col sm:flex-row gap-2">
                 {showDetails ? (
-                  <Button onClick={saveCustom} className="flex-1 bg-primary hover:bg-primary/90 font-semibold text-sm h-10">
+                  <Button onClick={saveCustom} className="flex-1 bg-primary hover:bg-primary/90 font-semibold text-xs h-9">
                     {cb.savePreferences}
                   </Button>
                 ) : (
-                  <Button onClick={accept} className="flex-1 bg-primary hover:bg-primary/90 font-semibold text-sm h-10">
+                  <Button onClick={accept} className="flex-1 bg-primary hover:bg-primary/90 font-semibold text-xs h-9">
                     {cb.acceptAll}
                   </Button>
                 )}
-                <Button onClick={reject} variant="outline" className="flex-1 border-border/50 font-semibold text-sm h-10">
+                <Button onClick={reject} variant="outline" className="flex-1 border-border/50 font-semibold text-xs h-9">
                   {cb.rejectAll}
                 </Button>
               </div>

@@ -34,10 +34,10 @@ export default function CreatorCard({ content, index = 0 }) {
               <div className="absolute inset-0 flex items-center justify-center bg-background/30">
                 <div className="glass rounded-2xl p-6 text-center border border-border/50 max-w-[200px]">
                   <Lock className="w-8 h-8 text-primary mx-auto mb-3" />
-                  <p className="text-sm font-semibold mb-1">Contenuto Premium</p>
-                  <p className="text-xs text-muted-foreground mb-3">Sblocca per vedere</p>
+                  <p className="text-sm font-semibold mb-1">Contenuto riservato</p>
+                  <p className="text-xs text-muted-foreground mb-3">Disponibile per gli iscritti</p>
                   <Button size="sm" className="bg-primary hover:bg-primary/90 glow-primary text-xs w-full">
-                    Sblocca
+                    Scopri
                   </Button>
                 </div>
               </div>
@@ -67,7 +67,7 @@ export default function CreatorCard({ content, index = 0 }) {
               className="w-8 h-8 rounded-full object-cover"
             />
             <div className="flex-1 min-w-0">
-              <Link to="/creator" className="text-sm font-semibold hover:text-primary transition-colors truncate block">
+              <Link to="/trainer" className="text-sm font-semibold hover:text-primary transition-colors truncate block">
                 {content.creatorName}
               </Link>
               <p className="text-xs text-muted-foreground">{content.timeAgo}</p>

@@ -1,11 +1,11 @@
 import { Helmet } from "react-helmet-async";
 
 const DEFAULTS = {
-  siteName: "Tokaro.fans",
-  title: "Tokaro.fans — Monetizza la tua community con abbonamenti e contenuti esclusivi",
-  description: "Tokaro.fans è la piattaforma per creator che vogliono monetizzare la propria community. Abbonamenti, contenuti premium, funnel automatici e CRM fan integrato.",
-  image: "https://tokaro.fans/tokaro-logo.png",
-  url: "https://tokaro.fans",
+  siteName: "Menia.io",
+  title: "Menia.io — Formazione online dai migliori formatori",
+  description: "Menia.io è la piattaforma di formazione online: corsi e community con i migliori formatori italiani. Un solo abbonamento, accesso a tutto il catalogo.",
+  image: "https://menia.io/menia-logo.png",
+  url: "https://menia.io",
 };
 
 export default function SEO({ title, description, image, url, type = "website" }) {

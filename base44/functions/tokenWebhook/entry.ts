@@ -17,6 +17,19 @@ Deno.serve(async (req) => {
     return new Response(`Webhook Error: ${err.message}`, { status: 400 });
   }
 
+  const base44 = createClientFromRequest(req);
+
+  // Log every webhook event
+  try {
+    await base44.asServiceRole.entities.WebhookEvent?.create?.({
+      provider: 'stripe',
+      event_type: event.type,
+      event_id: event.id,
+      payload: event.data?.object || {},
+      status: 'received',
+    });
+  } catch (_) { /* table may not exist via base44 entities, ignore */ }
+
   if (event.type !== 'checkout.session.completed') {
     return Response.json({ received: true });
   }
@@ -32,10 +45,9 @@ Deno.serve(async (req) => {
   const userEmail = meta.user_email;
   const tokens = parseInt(meta.tokens, 10);
   const sessionId = session.id;
+  const orderId = meta.order_id || null;
 
   try {
-    const base44 = createClientFromRequest(req);
-
     // Idempotency: check if transaction already exists
     const existing = await base44.asServiceRole.entities.TokenTransaction.filter({
       idempotency_key: sessionId,
@@ -54,12 +66,10 @@ Deno.serve(async (req) => {
     if (!wallets || wallets.length === 0) {
       wallet = await base44.asServiceRole.entities.TokenWallet.create({
         user_id: userId,
-        user_email: userEmail,
         wallet_type: 'user',
         balance: 0,
         total_earned: 0,
         total_spent: 0,
-        total_paid_out: 0,
       });
     } else {
       wallet = wallets[0];
@@ -76,7 +86,6 @@ Deno.serve(async (req) => {
     // Record transaction
     await base44.asServiceRole.entities.TokenTransaction.create({
       user_id: userId,
-      user_email: userEmail,
       wallet_type: 'user',
       type: 'topup',
       amount: tokens,
@@ -86,7 +95,34 @@ Deno.serve(async (req) => {
       idempotency_key: sessionId,
     });
 
-    console.log(`Credited ${tokens} tokens to user ${userId}`);
+    // Update payment_orders if order_id is present
+    if (orderId) {
+      try {
+        const orders = await base44.asServiceRole.entities.PaymentOrder?.filter?.({ id: orderId });
+        if (orders && orders.length > 0 && orders[0].status === 'pending') {
+          await base44.asServiceRole.entities.PaymentOrder.update(orders[0].id, {
+            status: 'succeeded',
+            provider_reference: sessionId,
+            confirmed_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+        }
+      } catch (orderErr) {
+        console.warn('Could not update payment_order:', orderErr.message);
+      }
+    }
+
+    // Log financial event
+    try {
+      await base44.asServiceRole.entities.FinancialLog?.create?.({
+        action: 'token_topup',
+        actor_id: userId,
+        amount_tokens: tokens,
+        details: { session_id: sessionId, order_id: orderId, pack_code: meta.pack_code },
+      });
+    } catch (_) { /* ignore if entity doesn't exist */ }
+
+    console.log(`Credited ${tokens} tokens to user ${userId} (session: ${sessionId})`);
     return Response.json({ received: true });
   } catch (error) {
     console.error('tokenWebhook processing error:', error);

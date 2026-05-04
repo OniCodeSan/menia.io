@@ -1,164 +1,171 @@
-import { useLanguage } from "@/lib/LanguageContext";
-
-const PLANS = [
-  ["0 – 100", "Gratuito / Free / Gratuit / Kostenlos / Gratis / Бесплатно"],
-  ["101 – 1.000", "€10"],
-  ["1.001 – 5.000", "€30"],
-  ["5.001 – 10.000", "€50"],
-  ["10.001 – 30.000", "€80"],
-  ["30.001 – 100.000", "€100"],
-  ["100.001 – 500.000", "€200"],
-  ["> 500.000", "€300"],
-];
-
-function Section({ title, children }) {
-  return (
-    <div>
-      <h2 className="font-heading text-lg font-bold mb-3 text-foreground border-b border-border/30 pb-2">{title}</h2>
-      {children}
-    </div>
-  );
-}
-
-function List({ items }) {
-  return (
-    <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-      {items.map((item, i) => <li key={i}>{item}</li>)}
-    </ul>
-  );
-}
-
 export default function TermsAndConditions() {
-  const { t } = useLanguage();
-  const tc = t.terms;
-
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-16">
-      <h1 className="font-heading text-3xl font-bold mb-2">{tc.title}</h1>
-      <p className="text-sm text-muted-foreground mb-10">{tc.lastUpdated}</p>
+    <div className="max-w-3xl mx-auto px-4 py-10">
+      <h1 className="font-heading text-2xl font-bold mb-6">Termini e Condizioni d'uso</h1>
+      <p className="text-xs text-muted-foreground mb-6">Ultimo aggiornamento: 30 aprile 2026</p>
+      <div className="bg-card border border-border/30 rounded-2xl p-6 space-y-5 text-sm leading-relaxed">
 
-      <div className="space-y-8">
-        <p className="text-muted-foreground leading-relaxed">{tc.intro}</p>
+        <section>
+          <h2 className="font-heading font-bold text-lg mb-2">1. Oggetto del servizio</h2>
+          <p>
+            Menia è una piattaforma di formazione online che permette ai formatori (di seguito anche
+            "creator") di pubblicare <strong>corsi</strong> con lezioni video e materiali didattici
+            (PDF, slide, fogli di calcolo, dispense) e gestire una <strong>community privata</strong>
+            per i propri studenti.
+            Menia fornisce esclusivamente l'infrastruttura tecnologica: <strong>non incassa
+            direttamente i pagamenti</strong> dei corsi, che vengono gestiti dal formatore tramite
+            provider esterni (Stripe Payment Link, Gumroad, Lemon Squeezy o altri di sua scelta).
+          </p>
+        </section>
 
-        <Section title={tc.s1.title}>
-          <List items={tc.s1.items} />
-        </Section>
-
-        <Section title={tc.s2.title}>
-          <p className="text-muted-foreground mb-2">{tc.s2.intro}</p>
-          <List items={tc.s2.items} />
-          <p className="text-muted-foreground mt-2">{tc.s2.outro}</p>
-        </Section>
-
-        <Section title={tc.s3.title}>
-          <p className="text-muted-foreground mb-2">{tc.s3.creatorIntro}</p>
-          <List items={tc.s3.creatorItems} />
-          <p className="text-muted-foreground mt-4 mb-2">{tc.s3.fanIntro}</p>
-          <List items={tc.s3.fanItems} />
-        </Section>
-
-        <Section title={tc.s4.title}>
-          <p className="font-semibold text-foreground mb-1">{tc.s4.trialTitle}</p>
-          <List items={tc.s4.trialItems} />
-          <p className="font-semibold text-foreground mt-4 mb-3">{tc.s4.plansTitle}</p>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm border border-border/40 rounded-xl overflow-hidden">
-              <thead>
-                <tr className="bg-secondary/50">
-                  <th className="text-left px-4 py-3 font-semibold">{tc.s4.colFollowers}</th>
-                  <th className="text-left px-4 py-3 font-semibold">{tc.s4.colCost}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {PLANS.map(([range, cost], i) => (
-                  <tr key={i} className={i % 2 === 0 ? "bg-card/30" : "bg-card/10"}>
-                    <td className="px-4 py-2.5 text-muted-foreground">{range}</td>
-                    <td className="px-4 py-2.5 font-semibold text-foreground">{cost}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="text-muted-foreground mt-3">{tc.s4.outro}</p>
-        </Section>
-
-        <Section title={tc.s5.title}>
-          <p className="font-semibold text-foreground mb-1">{tc.s5.buyTitle}</p>
-          <List items={tc.s5.buyItems} />
-          <p className="font-semibold text-foreground mt-4 mb-1">{tc.s5.useTitle}</p>
-          <List items={tc.s5.useItems} />
-          <p className="font-semibold text-foreground mt-4 mb-1">{tc.s5.refundTitle}</p>
-          <p className="text-muted-foreground">{tc.s5.refundText}</p>
-        </Section>
-
-        <Section title={tc.s6.title}>
-          <List items={tc.s6.items} />
-        </Section>
-
-        <Section title={tc.s7.title}>
-          <List items={tc.s7.items} />
-        </Section>
-
-        <Section title={tc.s8.title}>
-          <p className="text-muted-foreground mb-2">{tc.s8.intro}</p>
-          <List items={tc.s8.items} />
-          <p className="text-muted-foreground mt-2">{tc.s8.outro}</p>
-        </Section>
-
-        <Section title={tc.s9.title}>
-          <p className="text-muted-foreground mb-2">{tc.s9.intro}</p>
-          <List items={tc.s9.items} />
-        </Section>
-
-        <Section title={tc.s10.title}>
-          <p className="text-muted-foreground mb-2">{tc.s10.intro}</p>
-          <List items={tc.s10.items} />
-          <p className="text-muted-foreground mt-2">{tc.s10.outro}</p>
-        </Section>
-
-        <Section title={tc.s11.title}>
-          <p className="text-muted-foreground mb-2">{tc.s11.intro}</p>
-          <List items={tc.s11.items} />
-        </Section>
-
-        <Section title={tc.s12.title}>
-          <p className="text-muted-foreground">{tc.s12.text}</p>
-        </Section>
-
-        <Section title={tc.s13.title}>
-          <p className="text-muted-foreground">{tc.s13.text}</p>
-        </Section>
-
-        <Section title={tc.s14.title}>
-          <p className="text-muted-foreground">{tc.s14.text}</p>
-        </Section>
-
-        <Section title={tc.s15.title}>
-          <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-            <li>Email: <a href="mailto:support@tokaro.fans" className="text-primary hover:underline">support@tokaro.fans</a></li>
-            <li>Website: <a href="https://www.tokaro.fans" className="text-primary hover:underline">tokaro.fans</a></li>
+        <section>
+          <h2 className="font-heading font-bold text-lg mb-2">2. Account e ruoli</h2>
+          <ul className="list-disc list-inside space-y-1">
+            <li><strong>Studente</strong> (account "fan" nel sistema): chi acquista o accede ai corsi. Età minima: 16 anni.</li>
+            <li><strong>Formatore</strong> (account "creator" nel sistema): chi pubblica corsi e contenuti. Età minima: 18 anni.</li>
           </ul>
-        </Section>
+          <p className="mt-2">
+            È richiesta la fornitura di informazioni accurate (email, nome, data di nascita).
+            L'utente è responsabile della sicurezza delle credenziali e di ogni attività svolta dal
+            proprio account.
+          </p>
+        </section>
 
-        <Section title={tc.s16.title}>
-          {[
-            { title: tc.s16.s1title, intro: tc.s16.s1intro, items: tc.s16.s1items, outro: tc.s16.s1outro },
-            { title: tc.s16.s2title, text: tc.s16.s2text },
-            { title: tc.s16.s3title, intro: tc.s16.s3intro, items: tc.s16.s3items },
-            { title: tc.s16.s4title, intro: tc.s16.s4intro, items: tc.s16.s4items, outro: tc.s16.s4outro },
-            { title: tc.s16.s5title, intro: tc.s16.s5intro, items: tc.s16.s5items },
-            { title: tc.s16.s6title, intro: tc.s16.s6intro, items: tc.s16.s6items },
-            { title: tc.s16.s7title, intro: tc.s16.s7intro, items: tc.s16.s7items },
-          ].map((sub, i) => (
-            <div key={i} className={i > 0 ? "mt-5" : ""}>
-              <p className="font-semibold text-foreground mb-1">{sub.title}</p>
-              {sub.intro && <p className="text-muted-foreground mb-2">{sub.intro}</p>}
-              {sub.text && <p className="text-muted-foreground">{sub.text}</p>}
-              {sub.items && <List items={sub.items} />}
-              {sub.outro && <p className="text-muted-foreground mt-2">{sub.outro}</p>}
-            </div>
-          ))}
-        </Section>
+        <section>
+          <h2 className="font-heading font-bold text-lg mb-2">3. Piani per formatori</h2>
+          <p>
+            La pubblicazione e gestione dei contenuti formativi è soggetta a un piano di abbonamento
+            mensile a carico del formatore:
+          </p>
+          <ul className="list-disc list-inside space-y-1 mt-2">
+            <li><strong>Base</strong> — €4,99/mese — 1 corso</li>
+            <li><strong>Starter</strong> — €14,90/mese — 5 corsi</li>
+            <li><strong>Grow</strong> — €29,90/mese — 15 corsi</li>
+            <li><strong>Master</strong> — pacchetto su misura, attivato tramite contatto diretto con Menia</li>
+          </ul>
+          <p className="mt-2">
+            L'abbonamento è mensile, rinnovabile automaticamente, e si attiva tramite link di
+            pagamento esterno o, in casi specifici, su attivazione manuale dopo verifica del
+            pagamento. La cancellazione comporta il mantenimento del piano fino alla scadenza
+            corrente; il formatore conserva sempre i propri contenuti già pubblicati ma può
+            essere soggetto a limiti del piano inferiore alla riattivazione.
+          </p>
+          <p className="mt-2">
+            <strong>Diritto di recesso (consumatori UE):</strong> il formatore consumatore può
+            recedere entro 14 giorni dalla sottoscrizione di un piano scrivendo a{" "}
+            <a href="mailto:legal@menia.io" className="text-primary hover:underline">legal@menia.io</a>,
+            salvo esecuzione anticipata del servizio espressamente richiesta. In quest'ultimo caso
+            l'utente è tenuto al pagamento proporzionale al periodo già fruito.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="font-heading font-bold text-lg mb-2">4. Pagamenti dei corsi</h2>
+          <p>
+            I pagamenti per l'accesso ai corsi avvengono <strong>esclusivamente tramite il
+            link di pagamento esterno</strong> indicato dal formatore. Menia non incassa, non
+            conserva dati di carte di credito, non gestisce rimborsi e non applica commissioni
+            sulle vendite del formatore.
+          </p>
+          <p className="mt-2">
+            Una volta completato il pagamento sul provider esterno, l'accesso al contenuto viene
+            abilitato dal team Menia (manualmente, dopo verifica) o automaticamente tramite
+            webhook quando configurato dal formatore. Eventuali rimborsi, controversie sui
+            pagamenti, addebiti errati o chargeback devono essere risolti direttamente fra studente
+            e formatore tramite il provider di pagamento utilizzato.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="font-heading font-bold text-lg mb-2">5. Contenuti e Content Policy</h2>
+          <p>
+            Tutti i contenuti caricati dal formatore (testo, video, immagini, allegati, post di
+            community) devono rispettare la <a href="/policy" className="text-primary hover:underline">Content Policy</a>{" "}
+            di Menia. La piattaforma non ammette contenuti per adulti, espliciti, illegali,
+            discriminatori o che violino diritti di terzi. La violazione comporta la rimozione
+            immediata del contenuto e, nei casi gravi, la sospensione o chiusura permanente
+            dell'account.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="font-heading font-bold text-lg mb-2">6. Diritti e responsabilità del formatore</h2>
+          <ul className="list-disc list-inside space-y-1">
+            <li>Il formatore conserva ogni diritto d'autore sui contenuti pubblicati e concede a Menia una licenza non esclusiva, gratuita e revocabile per ospitare, distribuire e mostrare tali contenuti agli studenti, nei limiti necessari all'erogazione del servizio.</li>
+            <li>Il formatore è l'unico responsabile della qualità, accuratezza e legalità dei contenuti, nonché della titolarità dei diritti d'immagine, marchio e copyright.</li>
+            <li>Il formatore è responsabile della veridicità delle promesse formative e commerciali (titoli, descrizioni, sales page, FAQ). Non sono ammessi claim ingannevoli (es: "guadagni garantiti").</li>
+            <li>Il formatore è tenuto a rispondere in modo professionale alle richieste degli studenti e a tenere aggiornati i contenuti.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 className="font-heading font-bold text-lg mb-2">7. Limitazione di responsabilità</h2>
+          <p>
+            Menia fornisce la piattaforma "così com'è" (as is) e "come disponibile" (as available).
+            Non garantisce risultati formativi, finanziari, professionali o di carriera derivanti
+            dall'utilizzo dei contenuti. Menia non è parte dei contratti fra studente e formatore
+            e non è responsabile per controversie relative a qualità, contenuto o prezzi dei corsi,
+            che dovranno essere risolte direttamente fra le parti.
+          </p>
+          <p className="mt-2">
+            Menia non garantisce la continuità ininterrotta del servizio e si riserva il diritto
+            di effettuare manutenzioni programmate o straordinarie senza preavviso.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="font-heading font-bold text-lg mb-2">8. Sospensione e chiusura account</h2>
+          <p>
+            Menia può sospendere o chiudere account che violano questi termini, la Content Policy
+            o le leggi applicabili. In caso di violazioni gravi (contenuti illeciti, sfruttamento
+            di minori, frode), la chiusura è immediata e senza preavviso, con eventuale segnalazione
+            alle autorità competenti.
+          </p>
+          <p className="mt-2">
+            Il mancato pagamento dell'abbonamento del formatore comporta il declassamento al piano
+            Base o, in mancanza, la sospensione delle funzioni di pubblicazione. I contenuti già
+            pubblicati restano accessibili agli studenti che hanno già pagato l'accesso.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="font-heading font-bold text-lg mb-2">9. Modifiche ai termini</h2>
+          <p>
+            Menia può aggiornare questi termini per esigenze normative, tecniche o di servizio.
+            Le modifiche sostanziali saranno comunicate via email e tramite avviso in piattaforma
+            con almeno 15 giorni di preavviso. L'uso continuato della piattaforma dopo le modifiche
+            costituisce accettazione delle stesse.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="font-heading font-bold text-lg mb-2">10. Legge applicabile e foro competente</h2>
+          <p>
+            Questi termini sono disciplinati dalla legge italiana. Per ogni controversia con un
+            consumatore è competente il foro di residenza del consumatore stesso, ai sensi del
+            Codice del Consumo. Per controversie con utenti professionali è competente in via
+            esclusiva il foro di Milano.
+          </p>
+          <p className="mt-2">
+            È fatto salvo il diritto del consumatore di rivolgersi alla piattaforma di risoluzione
+            online delle controversie della Commissione Europea (
+            <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noreferrer" className="text-primary hover:underline">
+              ec.europa.eu/consumers/odr
+            </a>).
+          </p>
+        </section>
+
+        <section>
+          <h2 className="font-heading font-bold text-lg mb-2">11. Contatti</h2>
+          <p>
+            Per domande sui termini scrivi a{" "}
+            <a href="mailto:legal@menia.io" className="text-primary hover:underline">legal@menia.io</a>.
+            Per segnalazioni sui contenuti:{" "}
+            <a href="mailto:abuse@menia.io" className="text-primary hover:underline">abuse@menia.io</a>.
+            Per privacy:{" "}
+            <a href="mailto:privacy@menia.io" className="text-primary hover:underline">privacy@menia.io</a>.
+          </p>
+        </section>
       </div>
     </div>
   );

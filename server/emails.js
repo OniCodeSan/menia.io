@@ -4,8 +4,8 @@ const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null;
 
-const FROM = process.env.EMAIL_FROM || "Tokaro.fans <noreply@tokaro.fans>";
-const FRONTEND_URL = process.env.FRONTEND_URL || "https://tokaro.fans";
+const FROM = process.env.EMAIL_FROM || "Menia.io <noreply@menia.io>";
+const FRONTEND_URL = process.env.FRONTEND_URL || "https://menia.io";
 
 const escapeHtml = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
@@ -18,15 +18,19 @@ function layout(body) {
 <tr><td align="center">
 <table width="560" cellpadding="0" cellspacing="0" style="background:#13131a;border-radius:16px;border:1px solid #222;overflow:hidden">
   <tr><td style="padding:32px 40px 24px;text-align:center;border-bottom:1px solid #222">
-    <img src="${FRONTEND_URL}/tokaro-logo.png" width="48" height="48" alt="Tokaro.fans" style="border-radius:50%">
-    <p style="margin:12px 0 0;font-size:18px;font-weight:700;color:#fff">Tokaro.fans</p>
+    <img src="${FRONTEND_URL}/menia-logo.png" width="48" height="48" alt="Menia.io" style="border-radius:50%">
+    <p style="margin:12px 0 0;font-size:18px;font-weight:700;color:#fff">Menia.io</p>
   </td></tr>
   <tr><td style="padding:32px 40px">
     ${body}
   </td></tr>
   <tr><td style="padding:24px 40px;border-top:1px solid #222;text-align:center">
-    <p style="margin:0;font-size:12px;color:#666">
-      <a href="${FRONTEND_URL}" style="color:#7c3aed;text-decoration:none">tokaro.fans</a> — La piattaforma per creator
+    <p style="margin:0 0 8px;font-size:12px;color:#666">
+      <a href="${FRONTEND_URL}" style="color:#7c3aed;text-decoration:none">menia.io</a> — La piattaforma per creator
+    </p>
+    <p style="margin:0;font-size:11px;color:#555">
+      <a href="${FRONTEND_URL}/privacy-settings" style="color:#888;text-decoration:underline">Gestisci preferenze email</a> ·
+      <a href="${FRONTEND_URL}/privacy" style="color:#888;text-decoration:underline">Privacy Policy</a>
     </p>
   </td></tr>
 </table>
@@ -39,9 +43,9 @@ function layout(body) {
 const emails = {
   async sendWelcome({ email, name }) {
     if (!resend) { console.log("[emails] resend not configured, skipping welcome"); return; }
-    const firstName = (name || "").split(" ")[0] || "Ciao";
+    const firstName = escapeHtml((name || "").split(" ")[0] || "Ciao");
     const html = layout(`
-      <h1 style="margin:0 0 16px;font-size:24px;color:#fff">Benvenuto su Tokaro.fans! 🎉</h1>
+      <h1 style="margin:0 0 16px;font-size:24px;color:#fff">Benvenuto su Menia.io! 🎉</h1>
       <p style="margin:0 0 16px;font-size:15px;color:#ccc;line-height:1.6">
         Ciao <strong>${firstName}</strong>, il tuo account è stato creato con successo.
       </p>
@@ -55,7 +59,7 @@ const emails = {
       </table>
     `);
     try {
-      await resend.emails.send({ from: FROM, to: email, subject: "Benvenuto su Tokaro.fans! 🎉", html });
+      await resend.emails.send({ from: FROM, to: email, subject: "Benvenuto su Menia.io! 🎉", html });
       console.log(`[emails] welcome sent to ${email}`);
     } catch (err) {
       console.error("[emails] welcome error:", err.message);
@@ -64,7 +68,7 @@ const emails = {
 
   async sendTokenPurchase({ email, name, tokens, amountCents }) {
     if (!resend) { console.log("[emails] resend not configured, skipping token receipt"); return; }
-    const firstName = (name || "").split(" ")[0] || "Ciao";
+    const firstName = escapeHtml((name || "").split(" ")[0] || "Ciao");
     const amount = (amountCents / 100).toFixed(2).replace(".", ",");
     const html = layout(`
       <h1 style="margin:0 0 16px;font-size:24px;color:#fff">Ricarica confermata ✅</h1>
@@ -88,7 +92,7 @@ const emails = {
       </p>
       <table cellpadding="0" cellspacing="0" style="margin:0 auto">
         <tr><td style="background:#7c3aed;border-radius:8px;padding:12px 32px">
-          <a href="${FRONTEND_URL}/fan-dashboard?tab=wallet" style="color:#fff;text-decoration:none;font-size:15px;font-weight:600">Vai al wallet</a>
+          <a href="${FRONTEND_URL}/student-dashboard?tab=wallet" style="color:#fff;text-decoration:none;font-size:15px;font-weight:600">Vai al wallet</a>
         </td></tr>
       </table>
     `);
@@ -102,7 +106,7 @@ const emails = {
 
   async sendPayoutUpdate({ email, name, tokenAmount, euroAmount, status, reason }) {
     if (!resend) { console.log("[emails] resend not configured, skipping payout update"); return; }
-    const firstName = (name || "").split(" ")[0] || "Creator";
+    const firstName = escapeHtml((name || "").split(" ")[0] || "Creator");
     const statusLabels = {
       processing: { label: "In elaborazione", color: "#f59e0b", emoji: "⏳" },
       paid: { label: "Pagato", color: "#22c55e", emoji: "✅" },

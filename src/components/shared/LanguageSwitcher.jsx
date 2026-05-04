@@ -9,7 +9,7 @@ const LANGS = [
   { code: "fr", flag: "🇫🇷", label: "FR" },
   { code: "de", flag: "🇩🇪", label: "DE" },
   { code: "es", flag: "🇪🇸", label: "ES" },
-  { code: "ru", flag: "🇷🇺", label: "RU" },
+  { code: "pt", flag: "🇵🇹", label: "PT" },
 ];
 
 export default function LanguageSwitcher() {

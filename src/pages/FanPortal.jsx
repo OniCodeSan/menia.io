@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/lib/AuthContext";
-import { Heart, Video, Radio, MessageCircle, ArrowRight, Lock } from "lucide-react";
+import { Heart, Video, MessageCircle, ArrowRight, Lock, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 
 const BENEFITS = [
   { icon: Video, label: "Contenuti esclusivi", color: "text-primary" },
-  { icon: Radio, label: "Live in diretta", color: "text-destructive" },
+  { icon: Sparkles, label: "Aggiornamenti continui", color: "text-amber-500" },
   { icon: MessageCircle, label: "Messaggi privati", color: "text-accent" },
   { icon: Heart, label: "Community riservata", color: "text-chart-5" },
 ];
@@ -25,7 +25,7 @@ export default function FanPortal() {
       return;
     }
     if (user.role === "fan" || user.role === "admin") {
-      navigate("/fan-dashboard", { replace: true });
+      navigate("/student-dashboard", { replace: true });
     } else if (user.role === "creator") {
       setAccessDenied(true);
       setChecking(false);
@@ -35,7 +35,7 @@ export default function FanPortal() {
   }, [user, isLoadingAuth, navigate]);
 
   const handleLogin = () => {
-    navigate("/fan-login");
+    navigate("/student-login");
   };
 
   if (checking && !accessDenied) {
@@ -64,11 +64,11 @@ export default function FanPortal() {
             <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center">
               <Heart className="w-5 h-5 text-accent" />
             </div>
-            <span className="font-heading text-2xl font-bold">Tokaro.fans</span>
+            <span className="font-heading text-2xl font-bold">Menia.io</span>
           </div>
-          <h1 className="font-heading text-3xl font-bold mb-2">Area Fan</h1>
+          <h1 className="font-heading text-3xl font-bold mb-2">Area Studenti</h1>
           <p className="text-muted-foreground text-sm">
-            Accedi per sbloccare contenuti esclusivi dei tuoi creator preferiti.
+            Accedi per sbloccare i corsi dei formatori che segui.
           </p>
         </div>
 
@@ -84,7 +84,7 @@ export default function FanPortal() {
                   Questo accesso è riservato ai fan. I creator hanno la propria area dedicata.
                 </p>
               </div>
-              <Link to="/creator-portal">
+              <Link to="/trainer-portal">
                 <Button variant="outline" className="w-full border-border/50">
                   Vai all'area creator
                 </Button>
@@ -131,7 +131,7 @@ export default function FanPortal() {
               <div className="mt-4 text-center">
                 <p className="text-xs text-muted-foreground">
                   Sei un creator?{" "}
-                  <Link to="/creator-portal" className="text-primary hover:underline font-medium">
+                  <Link to="/trainer-portal" className="text-primary hover:underline font-medium">
                     Accedi all'area creator
                   </Link>
                 </p>
@@ -141,7 +141,7 @@ export default function FanPortal() {
         </div>
 
         <p className="text-center text-xs text-muted-foreground mt-6">
-          © 2026 Tokaro.fans · Tutti i diritti riservati
+          © 2026 Menia.io · Tutti i diritti riservati
         </p>
       </motion.div>
     </div>

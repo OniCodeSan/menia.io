@@ -35,7 +35,7 @@ export default function ResetPassword() {
     try {
       await authService.updatePassword(password);
       setDone(true);
-      setTimeout(() => navigate("/fan-dashboard", { replace: true }), 2000);
+      setTimeout(() => navigate("/student-dashboard", { replace: true }), 2000);
     } catch (err) {
       setError(err.message || "Errore inatteso");
     } finally {
@@ -63,9 +63,9 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-accent/10 blur-[120px]" />
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden isolate">
+      <div className="absolute inset-0 pointer-events-none -z-10">
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[320px] h-[320px] rounded-full bg-accent/[0.06] blur-3xl" />
       </div>
 
       <motion.div
@@ -75,8 +75,8 @@ export default function ResetPassword() {
       >
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2 mb-4">
-            <img src="/tokaro-logo.png" alt="Tokaro.fans" className="w-10 h-10 rounded-xl" />
-            <span className="font-heading text-2xl font-bold">Tokaro.fans</span>
+            <img src="/menia-logo.svg" alt="Menia.io" className="w-10 h-10 rounded-xl" />
+            <span className="font-heading text-2xl font-bold">Menia.io</span>
           </Link>
           <h1 className="font-heading text-3xl font-bold mb-2">Nuova password</h1>
           <p className="text-muted-foreground text-sm">Scegli una nuova password per il tuo account.</p>

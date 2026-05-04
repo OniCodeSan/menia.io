@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, useCallback, useRef } from "react";
-import { authService, isAuthBroken } from "./auth";
+import { authService, isAuthBroken, readSyncSessionUser } from "./auth";
 
 const AuthContext = createContext(null);
 
@@ -14,7 +14,7 @@ function AuthErrorBanner() {
       <button
         onClick={() => {
           Object.keys(localStorage)
-            .filter((k) => k.startsWith("tokaro:sb"))
+            .filter((k) => k.startsWith("menia:sb"))
             .forEach((k) => localStorage.removeItem(k));
           window.location.reload();
         }}
@@ -30,8 +30,12 @@ function AuthErrorBanner() {
 }
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
+  // Lazy initializer: legge la session da localStorage SINCRONO, prima
+  // del primo render. Se la session esiste, `user` è popolato al primo
+  // commit (FanDashboard può montare le sue query immediatamente, senza
+  // attendere la microtask di refresh()).
+  const [user, setUser] = useState(readSyncSessionUser);
+  const [isLoadingAuth, setIsLoadingAuth] = useState(() => user === null);
   const [authError, setAuthError] = useState(null);
   const mounted = useRef(true);
 
@@ -42,13 +46,29 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const refresh = useCallback(async () => {
-    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("auth timeout")), 8000));
     try {
+      if (authService.meFast) {
+        const quickUser = await authService.meFast();
+        if (quickUser) {
+          // meFast() ha già fornito user dall'auth session: non lanciamo
+          // anche me() qui, altrimenti facciamo fetch del profilo due volte
+          // (una qui + una in onAuthChange INITIAL_SESSION). Lasciamo
+          // l'evento onAuthChange come unica fonte del fullUser.
+          applyUser(quickUser);
+          return;
+        }
+      }
+      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("auth timeout")), 8000));
       const u = await Promise.race([authService.me(), timeout]);
       applyUser(u);
     } catch (err) {
-      applyUser(null);
-      if (isAuthBroken()) setAuthError(err?.message || "Auth broken");
+      if (isAuthBroken()) {
+        applyUser(null);
+        setAuthError(err?.message || "Auth broken");
+      } else {
+        if (!mounted.current) return;
+        setIsLoadingAuth(false);
+      }
     }
   }, [applyUser]);
 
@@ -108,7 +128,7 @@ export const AuthProvider = ({ children }) => {
         updateUser,
         refresh,
         navigateToLogin: () => {
-          window.location.href = "/fan-login";
+          window.location.href = "/student-login";
         },
       }}
     >

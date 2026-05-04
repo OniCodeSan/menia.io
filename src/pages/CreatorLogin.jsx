@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate, useSearchParams, useLocation } from "react-router-dom";
-import { Crown, Mail, Lock, ArrowRight, Eye, EyeOff, User, AlertCircle } from "lucide-react";
+import { Crown, Mail, Lock, ArrowRight, Eye, EyeOff, User, AlertCircle, Calendar } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,19 +19,21 @@ export default function CreatorLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     if (user.role === "admin") {
       navigate(fromPath || "/admin-console", { replace: true });
     } else if (user.role === "creator") {
-      navigate(user.onboarding_complete ? "/dashboard" : "/creator-onboarding", { replace: true });
+      navigate("/dashboard", { replace: true });
     } else if (user.role === "fan") {
-      navigate("/fan-dashboard", { replace: true });
+      navigate("/student-dashboard", { replace: true });
     }
   }, [user, navigate, fromPath]);
 
@@ -45,6 +47,8 @@ export default function CreatorLogin() {
     setEmail("");
     setPassword("");
     setFullName("");
+    setDateOfBirth("");
+    setTermsAccepted(false);
     const params = new URLSearchParams(searchParams);
     if (next === "register") params.set("mode", "register");
     else params.delete("mode");
@@ -57,12 +61,27 @@ export default function CreatorLogin() {
     setSubmitting(true);
     try {
       if (mode === "register") {
-        await register({ email, password, role: "creator", full_name: fullName });
-        navigate("/creator-onboarding", { replace: true });
+        if (!dateOfBirth) { setError("Data di nascita obbligatoria"); setSubmitting(false); return; }
+
+        const ageRes = await fetch("/api/auth/validate-age", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ date_of_birth: dateOfBirth, role: "creator" }),
+        });
+        const ageData = await ageRes.json();
+        if (!ageRes.ok) { setError(ageData.error); setSubmitting(false); return; }
+
+        await register({ email, password, role: "creator", full_name: fullName, date_of_birth: dateOfBirth });
+        navigate("/dashboard", { replace: true });
       } else {
         const u = await login({ email, password });
+        fetch("/api/auth/login-log", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, success: true }),
+        }).catch(() => {});
         if (u.role === "fan") {
-          setError("Questo account è registrato come fan. Usa l'area fan per accedere.");
+          setError("Questo account è registrato come studente. Usa l'area studenti per accedere.");
           setSubmitting(false);
           return;
         }
@@ -70,18 +89,25 @@ export default function CreatorLogin() {
           navigate(fromPath || "/admin-console", { replace: true });
           return;
         }
-        navigate(u.onboarding_complete ? "/dashboard" : "/creator-onboarding", { replace: true });
+        navigate("/dashboard", { replace: true });
       }
     } catch (err) {
+      fetch("/api/auth/login-log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, success: false, failure_reason: err.message }),
+      }).catch(() => {});
       setError(err.message || "Errore inatteso");
       setSubmitting(false);
     }
   };
 
+  const maxDate = new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split("T")[0];
+
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-primary/10 blur-[120px]" />
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden isolate">
+      <div className="absolute inset-0 pointer-events-none -z-10">
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[320px] h-[320px] rounded-full bg-primary/[0.06] blur-3xl" />
       </div>
 
       <motion.div
@@ -91,19 +117,25 @@ export default function CreatorLogin() {
       >
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
-              <Crown className="w-5 h-5 text-primary" />
-            </div>
-            <span className="font-heading text-2xl font-bold">Tokaro.fans</span>
+            <img src="/menia-logo.svg" alt="Menia.io" className="w-10 h-10 rounded-xl" />
+            <span className="font-heading text-2xl font-bold">Menia.io</span>
           </Link>
           <h1 className="font-heading text-3xl font-bold mb-2">
-            {mode === "register" ? "Diventa Creator" : "Accedi come Creator"}
+            {mode === "register" ? "Diventa Formatore" : "Accedi come Formatore"}
           </h1>
           <p className="text-muted-foreground text-sm">
             {mode === "register"
-              ? "Crea il tuo account e inizia a monetizzare il tuo pubblico."
-              : "Gestisci contenuti, fan e guadagni dalla tua dashboard."}
+              ? "Crea il tuo account e inizia a pubblicare i tuoi corsi."
+              : "Gestisci corsi, studenti e community dalla tua dashboard."}
           </p>
+          {mode === "register" && (
+            <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
+              <span className="text-base">🎁</span>
+              <span className="text-xs font-semibold text-primary">
+                Iscriviti ora: 1 mese di piano Starter incluso
+              </span>
+            </div>
+          )}
         </div>
 
         <form
@@ -169,6 +201,25 @@ export default function CreatorLogin() {
             </div>
           </div>
 
+          {mode === "register" && (
+            <div className="space-y-2">
+              <Label htmlFor="creator-dob" className="text-sm font-medium">Data di nascita</Label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  id="creator-dob"
+                  type="date"
+                  value={dateOfBirth}
+                  onChange={(e) => setDateOfBirth(e.target.value)}
+                  max={maxDate}
+                  required
+                  className="pl-9 h-11 bg-secondary/40 border-border/50"
+                />
+              </div>
+              <p className="text-[11px] text-muted-foreground">Per diventare formatore devi avere almeno 18 anni</p>
+            </div>
+          )}
+
           {mode === "login" && (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -183,6 +234,18 @@ export default function CreatorLogin() {
             </div>
           )}
 
+          {mode === "register" && (
+            <div className="flex items-start gap-2">
+              <Checkbox id="creator-terms" checked={termsAccepted} onCheckedChange={setTermsAccepted} className="mt-0.5" />
+              <Label htmlFor="creator-terms" className="text-xs text-muted-foreground cursor-pointer leading-relaxed">
+                Accetto i{" "}
+                <Link to="/terms" className="text-primary hover:underline" target="_blank">Termini e Condizioni</Link>
+                {" "}e la{" "}
+                <Link to="/privacy" className="text-primary hover:underline" target="_blank">Privacy Policy</Link>
+              </Label>
+            </div>
+          )}
+
           {error && (
             <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-destructive/10 border border-destructive/20 text-xs text-destructive">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -192,7 +255,7 @@ export default function CreatorLogin() {
 
           <Button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || (mode === "register" && (!termsAccepted || !dateOfBirth))}
             className="w-full h-11 bg-primary hover:bg-primary/90 glow-primary font-semibold text-sm"
           >
             {submitting
@@ -219,15 +282,15 @@ export default function CreatorLogin() {
             </p>
           )}
           <p className="text-xs text-muted-foreground">
-            Sei un fan?{" "}
-            <Link to="/fan-login" className="text-accent hover:underline font-medium">
-              Accedi all'area fan
+            Sei uno studente?{" "}
+            <Link to="/student-login" className="text-accent hover:underline font-medium">
+              Accedi all'area studenti
             </Link>
           </p>
         </div>
 
         <p className="text-center text-xs text-muted-foreground mt-6">
-          © 2026 Tokaro.fans · Tutti i diritti riservati
+          © 2026 Menia.io · Tutti i diritti riservati
         </p>
       </motion.div>
     </div>

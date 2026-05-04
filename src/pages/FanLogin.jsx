@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Heart, Mail, Lock, ArrowRight, Eye, EyeOff, User, AlertCircle } from "lucide-react";
+import { Heart, Mail, Lock, ArrowRight, Eye, EyeOff, User, AlertCircle, Calendar } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,10 +17,12 @@ export default function FanLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -29,7 +31,7 @@ export default function FanLogin() {
     } else if (user.role === "creator") {
       navigate("/dashboard", { replace: true });
     } else {
-      navigate("/fan-dashboard", { replace: true });
+      navigate("/student-dashboard", { replace: true });
     }
   }, [user, navigate]);
 
@@ -43,6 +45,8 @@ export default function FanLogin() {
     setEmail("");
     setPassword("");
     setFullName("");
+    setDateOfBirth("");
+    setTermsAccepted(false);
     const params = new URLSearchParams(searchParams);
     if (next === "register") params.set("mode", "register");
     else params.delete("mode");
@@ -56,27 +60,51 @@ export default function FanLogin() {
     try {
       let u;
       if (mode === "register") {
-        u = await register({ email, password, role: "fan", full_name: fullName });
+        if (!dateOfBirth) { setError("Data di nascita obbligatoria"); setSubmitting(false); return; }
+
+        const ageRes = await fetch("/api/auth/validate-age", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ date_of_birth: dateOfBirth, role: "fan" }),
+        });
+        const ageData = await ageRes.json();
+        if (!ageRes.ok) { setError(ageData.error); setSubmitting(false); return; }
+
+        u = await register({ email, password, role: "fan", full_name: fullName, date_of_birth: dateOfBirth });
       } else {
         u = await login({ email, password });
+        fetch("/api/auth/login-log", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, success: true }),
+        }).catch(() => {});
       }
       if (u?.role === "admin") {
         navigate("/admin-console", { replace: true });
       } else if (u?.role === "creator") {
         navigate("/dashboard", { replace: true });
       } else {
-        navigate("/fan-dashboard", { replace: true });
+        navigate("/student-dashboard", { replace: true });
       }
     } catch (err) {
+      if (mode === "login") {
+        fetch("/api/auth/login-log", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, success: false, failure_reason: err.message }),
+        }).catch(() => {});
+      }
       setError(err.message || "Errore inatteso");
       setSubmitting(false);
     }
   };
 
+  const maxDate = new Date(new Date().setFullYear(new Date().getFullYear() - 16)).toISOString().split("T")[0];
+
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-accent/10 blur-[120px]" />
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden isolate">
+      <div className="absolute inset-0 pointer-events-none -z-10">
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[320px] h-[320px] rounded-full bg-accent/[0.06] blur-3xl" />
       </div>
 
       <motion.div
@@ -86,18 +114,16 @@ export default function FanLogin() {
       >
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center">
-              <Heart className="w-5 h-5 text-accent" />
-            </div>
-            <span className="font-heading text-2xl font-bold">Tokaro.fans</span>
+            <img src="/menia-logo.svg" alt="Menia.io" className="w-10 h-10 rounded-xl" />
+            <span className="font-heading text-2xl font-bold">Menia.io</span>
           </Link>
           <h1 className="font-heading text-3xl font-bold mb-2">
-            {mode === "register" ? "Crea il tuo account Fan" : "Accedi come Fan"}
+            {mode === "register" ? "Crea il tuo account Studente" : "Accedi come Studente"}
           </h1>
           <p className="text-muted-foreground text-sm">
             {mode === "register"
-              ? "Iscriviti in pochi secondi e sblocca i creator che ami."
-              : "Sblocca i contenuti esclusivi dei tuoi creator preferiti."}
+              ? "Iscriviti in pochi secondi e accedi ai corsi dei formatori che segui."
+              : "Accedi ai corsi e alla community dei formatori che segui."}
           </p>
         </div>
 
@@ -164,6 +190,25 @@ export default function FanLogin() {
             </div>
           </div>
 
+          {mode === "register" && (
+            <div className="space-y-2">
+              <Label htmlFor="fan-dob" className="text-sm font-medium">Data di nascita</Label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  id="fan-dob"
+                  type="date"
+                  value={dateOfBirth}
+                  onChange={(e) => setDateOfBirth(e.target.value)}
+                  max={maxDate}
+                  required
+                  className="pl-9 h-11 bg-secondary/40 border-border/50"
+                />
+              </div>
+              <p className="text-[11px] text-muted-foreground">Devi avere almeno 16 anni per registrarti</p>
+            </div>
+          )}
+
           {mode === "login" && (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -178,6 +223,18 @@ export default function FanLogin() {
             </div>
           )}
 
+          {mode === "register" && (
+            <div className="flex items-start gap-2">
+              <Checkbox id="fan-terms" checked={termsAccepted} onCheckedChange={setTermsAccepted} className="mt-0.5" />
+              <Label htmlFor="fan-terms" className="text-xs text-muted-foreground cursor-pointer leading-relaxed">
+                Accetto i{" "}
+                <Link to="/terms" className="text-primary hover:underline" target="_blank">Termini e Condizioni</Link>
+                {" "}e la{" "}
+                <Link to="/privacy" className="text-primary hover:underline" target="_blank">Privacy Policy</Link>
+              </Label>
+            </div>
+          )}
+
           {error && (
             <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-destructive/10 border border-destructive/20 text-xs text-destructive">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -187,7 +244,7 @@ export default function FanLogin() {
 
           <Button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || (mode === "register" && (!termsAccepted || !dateOfBirth))}
             className="w-full h-11 bg-accent hover:bg-accent/90 font-semibold text-sm text-accent-foreground"
           >
             {submitting
@@ -214,15 +271,15 @@ export default function FanLogin() {
             </p>
           )}
           <p className="text-xs text-muted-foreground">
-            Sei un creator?{" "}
-            <Link to="/creator-login" className="text-primary hover:underline font-medium">
-              Accedi all'area creator
+            Sei un formatore?{" "}
+            <Link to="/trainer-portal" className="text-primary hover:underline font-medium">
+              Accedi all'area formatori
             </Link>
           </p>
         </div>
 
         <p className="text-center text-xs text-muted-foreground mt-6">
-          © 2026 Tokaro.fans · Tutti i diritti riservati
+          © 2026 Menia.io · Tutti i diritti riservati
         </p>
       </motion.div>
     </div>

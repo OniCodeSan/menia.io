@@ -12,76 +12,78 @@ export default function ConversationList({ selectedId, onSelect }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!hasSupabase || !user) { setLoading(false); return; }
+    if (!hasSupabase || !user?.id) { setLoading(false); return; }
     let cancelled = false;
 
     (async () => {
-      const { data: sent } = await supabase
-        .from("direct_messages")
-        .select("receiver_id")
-        .eq("sender_id", user.id);
-
-      const { data: received } = await supabase
-        .from("direct_messages")
-        .select("sender_id")
-        .eq("receiver_id", user.id);
-
-      const partnerIds = new Set();
-      sent?.forEach((m) => partnerIds.add(m.receiver_id));
-      received?.forEach((m) => partnerIds.add(m.sender_id));
-
-      if (cancelled || partnerIds.size === 0) {
-        if (!cancelled) setLoading(false);
-        return;
-      }
-
-      const ids = [...partnerIds];
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, full_name, avatar_url, role")
-        .in("id", ids);
-
-      const profileMap = {};
-      profiles?.forEach((p) => { profileMap[p.id] = p; });
-
-      const convos = [];
-      for (const partnerId of ids) {
-        const { data: lastMsg } = await supabase
+      try {
+        // Single query: fetch all messages involving the user (newest first).
+        // Replaces the previous 2N+3 queries (partner-ids × 2, profiles, then
+        // lastMsg+unread per partner). Latest 200 messages are plenty for
+        // conversation list summaries; older ones load when chat opens.
+        const { data: msgs } = await supabase
           .from("direct_messages")
-          .select("message, created_at, sender_id, read")
-          .or(`and(sender_id.eq.${user.id},receiver_id.eq.${partnerId}),and(sender_id.eq.${partnerId},receiver_id.eq.${user.id})`)
+          .select("sender_id, receiver_id, message, created_at, read")
+          .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
           .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
+          .limit(200);
 
-        const { count: unreadCount } = await supabase
-          .from("direct_messages")
-          .select("id", { count: "exact", head: true })
-          .eq("sender_id", partnerId)
-          .eq("receiver_id", user.id)
-          .eq("read", false);
+        if (cancelled) return;
 
-        const p = profileMap[partnerId];
-        convos.push({
-          id: partnerId,
-          name: p?.full_name || "Utente",
-          avatar: p?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(p?.full_name || "U")}&background=7c3aed&color=fff&size=100`,
-          role: p?.role || "fan",
-          lastMessage: lastMsg?.message || "",
-          lastAt: lastMsg?.created_at || "",
-          unread: unreadCount || 0,
+        const lastByPartner = new Map();
+        const unreadByPartner = new Map();
+        for (const m of msgs || []) {
+          const partnerId = m.sender_id === user.id ? m.receiver_id : m.sender_id;
+          if (!lastByPartner.has(partnerId)) {
+            lastByPartner.set(partnerId, m);
+          }
+          if (m.receiver_id === user.id && !m.read) {
+            unreadByPartner.set(partnerId, (unreadByPartner.get(partnerId) || 0) + 1);
+          }
+        }
+
+        const ids = [...lastByPartner.keys()];
+        if (ids.length === 0) {
+          if (!cancelled) setLoading(false);
+          return;
+        }
+
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name, avatar_url, role")
+          .in("id", ids);
+
+        if (cancelled) return;
+        const profileMap = {};
+        profiles?.forEach((p) => { profileMap[p.id] = p; });
+
+        const convos = ids.map((partnerId) => {
+          const last = lastByPartner.get(partnerId);
+          const p = profileMap[partnerId];
+          return {
+            id: partnerId,
+            name: p?.full_name || "Utente",
+            avatar: p?.avatar_url || null,
+            role: p?.role || "fan",
+            lastMessage: last?.message || "",
+            lastAt: last?.created_at || "",
+            unread: unreadByPartner.get(partnerId) || 0,
+          };
         });
-      }
 
-      convos.sort((a, b) => (b.lastAt || "").localeCompare(a.lastAt || ""));
-      if (!cancelled) {
-        setConversations(convos);
-        setLoading(false);
+        convos.sort((a, b) => (b.lastAt || "").localeCompare(a.lastAt || ""));
+        if (!cancelled) {
+          setConversations(convos);
+        }
+      } catch (err) {
+        console.warn("[ConversationList]", err.message);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     })();
 
     return () => { cancelled = true; };
-  }, [user]);
+  }, [user?.id]);
 
   const filtered = conversations.filter((c) =>
     c.name.toLowerCase().includes(search.toLowerCase())
@@ -140,11 +142,19 @@ export default function ConversationList({ selectedId, onSelect }) {
               }`}
             >
               <div className="relative shrink-0">
-                <img
-                  src={conv.avatar}
-                  alt={conv.name}
-                  className="w-11 h-11 rounded-full object-cover"
-                />
+                {conv.avatar ? (
+                  <img
+                    src={conv.avatar}
+                    alt={conv.name}
+                    loading="lazy"
+                    decoding="async"
+                    className="w-11 h-11 rounded-full object-cover bg-primary/15"
+                  />
+                ) : (
+                  <div className="w-11 h-11 rounded-full bg-primary/20 text-primary flex items-center justify-center text-sm font-bold">
+                    {initials(conv.name)}
+                  </div>
+                )}
                 {conv.unread > 0 && (
                   <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center">
                     {conv.unread}
@@ -178,5 +188,16 @@ function timeAgo(dateStr) {
   const hours = Math.floor(mins / 60);
   if (hours < 24) return `${hours}h`;
   const days = Math.floor(hours / 24);
-  return `${days}g`;
+  if (days < 7) return `${days}gg`;
+  return new Date(dateStr).toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit" });
+}
+
+function initials(name) {
+  if (!name) return "?";
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((s) => s[0]?.toUpperCase() || "")
+    .join("") || "?";
 }
