@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { Menu, X, LogIn, LogOut, User, ChevronDown, Settings, LayoutDashboard, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/AuthContext";
+import useBadgeCounts from "@/hooks/useBadgeCounts";
 import MeniaLogo from "@/components/shared/MeniaLogo";
 import NotificationBell from "@/components/notifications/NotificationBell";
 
@@ -15,6 +16,7 @@ const NAV = [
 
 export default function Navbar() {
   const { user, logout } = useAuth();
+  const { unreadMessages } = useBadgeCounts();
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(false);
@@ -56,17 +58,25 @@ export default function Navbar() {
         </Link>
 
         <nav className="hidden md:flex items-center gap-1 ml-4">
-          {NAV.filter((n) => !n.auth || user).map((n) => (
-            <Link
-              key={n.to}
-              to={n.to}
-              className={`px-3 py-2 rounded-lg text-sm font-semibold ${
-                isActive(n.to) ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {n.label}
-            </Link>
-          ))}
+          {NAV.filter((n) => !n.auth || user).map((n) => {
+            const badge = n.to === "/messages" ? unreadMessages : 0;
+            return (
+              <Link
+                key={n.to}
+                to={n.to}
+                className={`px-3 py-2 rounded-lg text-sm font-semibold inline-flex items-center gap-1.5 ${
+                  isActive(n.to) ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {n.label}
+                {badge > 0 && (
+                  <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+                    {badge > 99 ? "99+" : badge}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="ml-auto flex items-center gap-2">

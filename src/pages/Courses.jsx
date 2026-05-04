@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { GraduationCap, Search, X } from "lucide-react";
+import { GraduationCap, Search, X, Lock, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import CourseCard from "@/components/courses/CourseCard";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/AuthContext";
+
+// Login wall: utenti anonimi vedono solo i primi N corsi del catalogo,
+// poi un overlay invita al signup. I loggati vedono tutto.
+const ANON_PREVIEW_LIMIT = 4;
 
 const SORT_OPTIONS = [
   { id: "ranking", label: "Più popolari" },
@@ -25,6 +32,7 @@ function CourseCardSkeleton() {
 }
 
 export default function Courses() {
+  const { user } = useAuth();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
@@ -113,11 +121,42 @@ export default function Courses() {
               {filtered.length} risultat{filtered.length === 1 ? "o" : "i"} per "{query}"
             </p>
           )}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map((c, i) => (
-              <CourseCard key={c.id} course={c} index={i} showCreator={true} />
-            ))}
-          </div>
+          {(() => {
+            // Login wall: anon vede solo ANON_PREVIEW_LIMIT corsi quando non c'è ricerca attiva
+            const showWall = !user && !query && filtered.length > ANON_PREVIEW_LIMIT;
+            const displayed = showWall ? filtered.slice(0, ANON_PREVIEW_LIMIT) : filtered;
+            const hidden = filtered.length - displayed.length;
+            return (
+              <>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {displayed.map((c, i) => (
+                    <CourseCard key={c.id} course={c} index={i} showCreator={true} />
+                  ))}
+                </div>
+                {showWall && (
+                  <div className="mt-6 bg-gradient-to-br from-primary/10 via-primary/5 to-accent/5 border border-primary/20 rounded-2xl p-6 sm:p-8 text-center">
+                    <div className="w-12 h-12 rounded-2xl bg-primary/15 mx-auto mb-3 flex items-center justify-center">
+                      <Lock className="w-5 h-5 text-primary" />
+                    </div>
+                    <h3 className="font-heading font-bold text-lg mb-1">Accedi per vedere altri {hidden} cors{hidden === 1 ? "o" : "i"}</h3>
+                    <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
+                      Crea un account gratuito: anteprima su ogni corso, niente carta richiesta.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                      <Link to="/student-login?mode=register">
+                        <Button>
+                          Inizia gratis <ArrowRight className="w-4 h-4 ml-1.5" />
+                        </Button>
+                      </Link>
+                      <Link to="/student-login">
+                        <Button variant="ghost">Ho già un account</Button>
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </>
       )}
     </div>

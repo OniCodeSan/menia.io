@@ -58,8 +58,9 @@ module.exports = function createCoursesRouter({ supabase, requireUserJWT }) {
     if (!data?.length) return res.json({ courses: [] });
 
     const creatorIds = [...new Set(data.map((c) => c.creator_id))];
+    const courseIds = data.map((c) => c.id);
 
-    const [{ data: creators }, { data: kpis }] = await Promise.all([
+    const [{ data: creators }, { data: kpis }, { data: lessonRows }] = await Promise.all([
       supabase
         .from("profiles")
         .select("id, full_name, handle, avatar_url")
@@ -68,18 +69,34 @@ module.exports = function createCoursesRouter({ supabase, requireUserJWT }) {
         .from("creator_kpi_aggregated")
         .select("creator_id, visibility_score, total_students")
         .in("creator_id", creatorIds),
+      supabase
+        .from("course_lessons")
+        .select("course_id, is_preview")
+        .in("course_id", courseIds),
     ]);
     const cmap = new Map((creators || []).map((p) => [p.id, p]));
     const kmap = new Map((kpis || []).map((k) => [k.creator_id, k]));
 
+    // Aggrega lesson_count + has_preview per corso
+    const lessonAgg = new Map();
+    (lessonRows || []).forEach((l) => {
+      const cur = lessonAgg.get(l.course_id) || { lesson_count: 0, has_preview: false };
+      cur.lesson_count += 1;
+      if (l.is_preview) cur.has_preview = true;
+      lessonAgg.set(l.course_id, cur);
+    });
+
     let courses = data.map((c) => {
       const k = kmap.get(c.creator_id);
+      const lAgg = lessonAgg.get(c.id) || { lesson_count: 0, has_preview: false };
       const ageDays = (Date.now() - new Date(c.created_at).getTime()) / 86400000;
       const freshness = Math.max(0, 100 - ageDays * 10);
       return {
         ...c,
         creator: cmap.get(c.creator_id) || null,
         student_count: k?.total_students || 0,
+        lesson_count: lAgg.lesson_count,
+        has_preview: lAgg.has_preview,
         ranking_score: (k?.visibility_score || 0) + freshness,
       };
     });

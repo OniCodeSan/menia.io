@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import {
-  LayoutDashboard, GraduationCap, Radio, Users, BarChart3, Settings,
+  LayoutDashboard, GraduationCap, Users, BarChart3, Settings,
   Menu, X, LogOut, Megaphone,
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
+import useBadgeCounts from "@/hooks/useBadgeCounts";
 import MeniaLogo from "@/components/shared/MeniaLogo";
 
 // Each section is its own route under /dashboard. Active state comes from the
@@ -20,6 +21,7 @@ const SECTIONS = [
 
 export default function CreatorSidebar({ onLogout }) {
   const { user } = useAuth();
+  const { newFollowers7d } = useBadgeCounts();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -76,6 +78,9 @@ export default function CreatorSidebar({ onLogout }) {
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           {SECTIONS.map((s) => {
             const active = isActive(s.route);
+            // Badge: nuovi follower 7gg → "Broadcast" (lì pubblichi a loro);
+            // se domani avremo "ultimi commenti" sui post, vanno su Community.
+            const badge = s.route === "/dashboard/broadcasts" ? newFollowers7d : 0;
             return (
               <button
                 key={s.route}
@@ -91,7 +96,15 @@ export default function CreatorSidebar({ onLogout }) {
                   <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-primary rounded-r" aria-hidden />
                 )}
                 <s.icon className="w-4 h-4 flex-shrink-0" strokeWidth={1.75} />
-                <span>{s.label}</span>
+                <span className="flex-1">{s.label}</span>
+                {badge > 0 && (
+                  <span
+                    title={`+${badge} nuov${badge === 1 ? "o" : "i"} iscritt${badge === 1 ? "o" : "i"} negli ultimi 7 giorni`}
+                    className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold"
+                  >
+                    {badge > 99 ? "99+" : `+${badge}`}
+                  </span>
+                )}
               </button>
             );
           })}

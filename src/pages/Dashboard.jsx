@@ -56,7 +56,7 @@ export default function Dashboard() {
         <DashboardOverview kpi={data.kpi} />
         <SegmentBadge kpi={data.kpi} />
         <Suggestions
-          suggestions={data.suggestions}
+          data={data}
           onCreateCourse={createAndOpenEditor}
         />
       </div>

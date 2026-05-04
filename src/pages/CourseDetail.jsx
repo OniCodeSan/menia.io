@@ -4,12 +4,13 @@ import { motion } from "framer-motion";
 import {
   GraduationCap, Loader2, Lock, Play, ExternalLink, CheckCircle2,
   Crown, Users, Target, X, Gift, FileText, Download, Paperclip, User,
-  ChevronRight,
+  ChevronRight, Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { coursesApi, kpiApi } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { safeLessonHtml } from "@/lib/safeHtml";
+import { useCourseProgress } from "@/hooks/useCourseProgress";
 import Paywall from "@/components/billing/Paywall";
 import SEO from "@/components/shared/SEO";
 
@@ -67,6 +68,10 @@ export default function CourseDetail() {
 
   const { course, lessons, creator, has_access, is_owner, access_reason } = data;
   const previewLesson = lessons?.find((l) => l.is_preview && !l.locked);
+  const { completedIds, percent: progressPct, markComplete } = useCourseProgress(
+    course?.id,
+    lessons?.length || 0
+  );
   const showPlatformPaywall = !has_access && !is_owner && access_reason === "paywall";
   const showPaymentCta = !has_access && !is_owner && !showPlatformPaywall && course.external_payment_link;
   const totalLessons = lessons?.length || 0;
@@ -255,10 +260,21 @@ export default function CourseDetail() {
 
       {/* OUTLINE LEZIONI */}
       <Section title="Contenuto del corso" icon={GraduationCap}>
+        {has_access && lessons?.length > 0 && (
+          <div className="mb-3 flex items-center gap-3 text-xs">
+            <div className="flex-1 h-1.5 rounded-full bg-secondary/40 overflow-hidden">
+              <div className="h-full bg-chart-3 transition-all" style={{ width: `${progressPct}%` }} />
+            </div>
+            <span className="text-muted-foreground whitespace-nowrap">
+              <strong className="text-foreground">{completedIds.size}</strong>/{lessons.length} completate ({progressPct}%)
+            </span>
+          </div>
+        )}
         <div className="bg-card border border-border/30 rounded-2xl divide-y divide-border/20">
           {lessons?.length ? lessons.map((l, i) => {
             const accessible = !l.locked;
             const isActive = activeLesson?.id === l.id;
+            const isDone = completedIds.has(l.id);
             return (
               <button
                 key={l.id}
@@ -268,9 +284,15 @@ export default function CourseDetail() {
                   isActive ? "bg-primary/5" : "hover:bg-secondary/20"
                 } ${!accessible ? "cursor-not-allowed opacity-70" : ""}`}
               >
-                <span className="w-8 h-8 rounded-lg bg-secondary/40 flex items-center justify-center flex-shrink-0 text-xs font-bold">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
+                {isDone ? (
+                  <span className="w-8 h-8 rounded-lg bg-chart-3/15 flex items-center justify-center flex-shrink-0">
+                    <Check className="w-4 h-4 text-chart-3" strokeWidth={3} />
+                  </span>
+                ) : (
+                  <span className="w-8 h-8 rounded-lg bg-secondary/40 flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                )}
                 <span className="flex-1 text-sm font-medium truncate">{l.title}</span>
                 {l.attachment_count > 0 && (
                   <span className="text-[10px] text-muted-foreground inline-flex items-center gap-0.5" title={`${l.attachment_count} materiali`}>
@@ -310,6 +332,20 @@ export default function CourseDetail() {
             )}
             {activeLesson.body && (
               <div className="prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: safeLessonHtml(activeLesson.body) }} />
+            )}
+            {/* Mark complete CTA — visible solo se non già completata */}
+            {!completedIds.has(activeLesson.id) && (
+              <div className="mt-5 pt-5 border-t border-border/20 flex justify-end">
+                <Button size="sm" onClick={() => markComplete(activeLesson.id)}>
+                  <Check className="w-4 h-4 mr-1.5" /> Marca come completata
+                </Button>
+              </div>
+            )}
+            {completedIds.has(activeLesson.id) && (
+              <div className="mt-5 pt-5 border-t border-border/20 flex items-center gap-2 text-xs text-chart-3">
+                <CheckCircle2 className="w-4 h-4" />
+                Lezione completata
+              </div>
             )}
             {activeLesson.attachments?.length > 0 && (
               <div className="mt-5 pt-5 border-t border-border/20">
