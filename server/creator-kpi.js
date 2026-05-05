@@ -623,6 +623,18 @@ module.exports = function createKpiRouter({ supabase, requireUserJWT, requireAdm
         .upsert({ user_id: user.id, external_payment_link: external_payment_link.trim() });
     }
 
+    // Notifica email (soft-fail, non blocca la response)
+    try {
+      const emails = require("./emails");
+      const { data: prof } = await supabase
+        .from("profiles").select("full_name").eq("id", user.id).maybeSingle();
+      emails.sendPromoActivated({
+        email: user.email,
+        name: prof?.full_name || user.user_metadata?.full_name || "",
+        months: cur.months,
+      }).catch(() => {});
+    } catch {}
+
     return res.json({
       ok: true,
       months_granted: cur.months,

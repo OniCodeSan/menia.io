@@ -218,11 +218,17 @@ app.post("/api/send-welcome", async (req, res) => {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("full_name, handle")
+      .select("full_name, handle, role")
       .eq("id", authUser.id)
       .maybeSingle();
 
-    await emails.sendWelcome({ email: authUser.email, name: profile?.full_name });
+    // Split welcome per ruolo: creator vs studente
+    const isCreator = profile?.role === "creator" || profile?.role === "admin";
+    if (isCreator) {
+      await emails.sendCreatorWelcome({ email: authUser.email, name: profile?.full_name });
+    } else {
+      await emails.sendWelcome({ email: authUser.email, name: profile?.full_name });
+    }
     return res.json({ ok: true });
   } catch (err) {
     console.error("[send-welcome]", err.message);
@@ -656,6 +662,61 @@ async function cleanupCourseDrafts() {
   }
 }
 
+// Trial reminder: trova le subscription "trial" che scadono entro 7 giorni
+// e che NON hanno ancora ricevuto la mail (deduped via trial_reminder_sent_at).
+// La colonna è opzionale: se manca, il filtro è solo sulla finestra temporale.
+async function sendTrialExpiringReminders() {
+  try {
+    const now = Date.now();
+    const sevenDaysFromNow = new Date(now + 7 * 86400000).toISOString();
+    const today = new Date(now).toISOString();
+
+    const { data: subs, error } = await supabase
+      .from("platform_subscriptions")
+      .select("user_id, trial_end")
+      .eq("status", "trial")
+      .lte("trial_end", sevenDaysFromNow)
+      .gte("trial_end", today)
+      .is("trial_reminder_sent_at", null)
+      .limit(200);
+
+    if (error) {
+      // Se la colonna trial_reminder_sent_at non esiste, fallback senza dedup
+      // (puoi aggiungerla con: ALTER TABLE platform_subscriptions ADD COLUMN
+      //  trial_reminder_sent_at timestamptz)
+      console.warn("[CRON] trial reminders skip:", error.message);
+      return { sent: 0, error: error.message };
+    }
+
+    let sent = 0;
+    for (const sub of subs || []) {
+      try {
+        const [{ data: au }, { data: prof }] = await Promise.all([
+          supabase.auth.admin.getUserById(sub.user_id),
+          supabase.from("profiles").select("full_name").eq("id", sub.user_id).maybeSingle(),
+        ]);
+        const email = au?.user?.email;
+        if (!email) continue;
+        const r = await emails.sendTrialExpiring({
+          email, name: prof?.full_name || "", expires_at: sub.trial_end,
+        });
+        if (r.ok) {
+          await supabase.from("platform_subscriptions")
+            .update({ trial_reminder_sent_at: new Date().toISOString() })
+            .eq("user_id", sub.user_id);
+          sent++;
+        }
+      } catch (e) {
+        console.warn("[CRON] trial reminder for", sub.user_id, e.message);
+      }
+    }
+    return { sent };
+  } catch (err) {
+    console.error("[CRON] sendTrialExpiringReminders failed:", err.message);
+    return { sent: 0, error: err.message };
+  }
+}
+
 async function runGdprJobs() {
   const start = Date.now();
   console.log("[CRON] Start GDPR jobs", new Date(start).toISOString());
@@ -666,9 +727,10 @@ async function runGdprJobs() {
     const kpi = await recomputeAllKpi();
     const drafts = await cleanupCourseDrafts();
     const platformExpire = await expirePlatformSubs();
+    const trialReminders = await sendTrialExpiringReminders();
     const durationMs = Date.now() - start;
 
-    const details = { deletions, retention, kpi, drafts, platformExpire };
+    const details = { deletions, retention, kpi, drafts, platformExpire, trialReminders };
     await updateCronStatus("gdpr", "success", { durationMs, details });
 
     console.log("[CRON] Done", { ...details, duration: `${durationMs}ms` });

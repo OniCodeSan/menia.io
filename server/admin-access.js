@@ -6,6 +6,7 @@
 
 const express = require("express");
 const access = require("./access");
+const emails = require("./emails");
 
 const ALLOWED_SOURCES = ["manual", "external_payment", "webhook"];
 
@@ -65,6 +66,30 @@ module.exports = function createAdminAccessRouter({ supabase, requireAdminJWT })
     }
 
     console.log(`[admin] course access granted: user=${user_id} course=${course_id} source=${source} by=${req.admin.id}`);
+
+    // Notifica formatore: nuovo studente nel suo corso (soft-fail)
+    (async () => {
+      try {
+        const [{ data: creator }, { data: studentProfile }, { data: creatorAuth }] = await Promise.all([
+          supabase.from("profiles").select("full_name").eq("id", c.creator_id).maybeSingle(),
+          supabase.from("profiles").select("full_name").eq("id", user_id).maybeSingle(),
+          supabase.auth.admin.getUserById(c.creator_id),
+        ]);
+        const creatorEmail = creatorAuth?.user?.email;
+        if (creatorEmail) {
+          await emails.sendNewStudent({
+            email: creatorEmail,
+            name: creator?.full_name || "",
+            student_name: studentProfile?.full_name || "Uno studente",
+            course_title: c.title || "il tuo corso",
+            course_id: course_id,
+          });
+        }
+      } catch (e) {
+        console.warn("[admin:grant-course-access:email]", e.message);
+      }
+    })();
+
     return res.json({ access: data });
   });
 

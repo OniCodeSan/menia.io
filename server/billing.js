@@ -6,11 +6,30 @@
 // =============================================================================
 
 const express = require("express");
+const emails  = require("./emails");
 
 const STRIPE_SECRET_KEY     = process.env.STRIPE_SECRET_KEY || "";
 const STRIPE_PRICE_ID       = process.env.STRIPE_PRICE_ID || "";       // price_xxx (€0.99 monthly)
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || ""; // whsec_xxx
 const FRONTEND_URL          = process.env.FRONTEND_URL || "https://menia.io";
+
+// Helper: recupera email + name dell'utente per le notifiche post-webhook.
+// Soft-fail (no throw): se non trova niente ritorna null e la mail viene saltata.
+async function fetchUserEmailName(supabase, userId) {
+  if (!userId) return null;
+  try {
+    const [{ data: authUser }, { data: profile }] = await Promise.all([
+      supabase.auth.admin.getUserById(userId),
+      supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle(),
+    ]);
+    const email = authUser?.user?.email;
+    if (!email) return null;
+    return { email, name: profile?.full_name || authUser?.user?.user_metadata?.full_name || "" };
+  } catch (e) {
+    console.warn("[billing:fetchUserEmailName]", e.message);
+    return null;
+  }
+}
 
 const STRIPE_ENABLED = !!STRIPE_SECRET_KEY && !!STRIPE_PRICE_ID;
 let stripe = null;
@@ -117,6 +136,14 @@ async function handlePlatformEvent(supabase, event, { userId, obj, nowIso }) {
         console.warn("[billing:webhook:platform] missing userId metadata on", event.type);
         break;
       }
+      // Idempotente: solo se la subscription PASSA da non-active a active mando email
+      const { data: existing } = await supabase
+        .from("platform_subscriptions")
+        .select("status")
+        .eq("user_id", userId)
+        .maybeSingle();
+      const wasActive = existing?.status === "active" || existing?.status === "trial";
+
       await supabase.from("platform_subscriptions").upsert({
         user_id: userId,
         status: "active",
@@ -128,6 +155,12 @@ async function handlePlatformEvent(supabase, event, { userId, obj, nowIso }) {
         external_subscription_id: subscriptionId,
         updated_at: nowIso,
       }, { onConflict: "user_id" });
+
+      // Email solo alla prima attivazione (non ad ogni rinnovo invoice.paid)
+      if (!wasActive && event.type === "checkout.session.completed") {
+        const u = await fetchUserEmailName(supabase, userId);
+        if (u) emails.sendSubscriptionActivated({ ...u, amount: "0,99" }).catch(() => {});
+      }
       break;
     }
 
@@ -161,6 +194,8 @@ async function handlePlatformEvent(supabase, event, { userId, obj, nowIso }) {
       await supabase.from("platform_subscriptions")
         .update({ status: "canceled", cancel_at_period_end: true, updated_at: nowIso })
         .eq("user_id", userId);
+      const u = await fetchUserEmailName(supabase, userId);
+      if (u) emails.sendSubscriptionCanceled(u).catch(() => {});
       break;
     }
 
@@ -203,6 +238,20 @@ async function handleCreatorPlanEvent(supabase, event, { userId, planId, obj, no
         granted_by: userId,
       });
       try { await supabase.rpc("compute_creator_kpi", { p_creator_id: userId }); } catch {}
+
+      // Email solo alla prima attivazione (checkout, non rinnovi)
+      if (event.type === "checkout.session.completed") {
+        const u = await fetchUserEmailName(supabase, userId);
+        if (u) {
+          // Recupera il nome leggibile del piano (Base/Starter/Grow)
+          const { data: plan } = await supabase
+            .from("creator_plans").select("name, price_monthly").eq("id", planId).maybeSingle();
+          const planLabel = plan
+            ? `${plan.name}${plan.price_monthly ? " — €" + Number(plan.price_monthly).toFixed(2).replace(".", ",") + "/mese" : ""}`
+            : planId;
+          emails.sendCreatorPlanActivated({ ...u, plan_name: planLabel }).catch(() => {});
+        }
+      }
       break;
     }
 

@@ -193,6 +193,17 @@ module.exports = function createSocialRouter({ supabase, requireUserJWT }) {
 async function fanOutBroadcast(supabase, broadcast, senderId) {
   let lastSeen = null;
   let totalDelivered = 0;
+  let totalMailed = 0;
+
+  // Nome creator per il subject email — fetched una volta per fanout
+  const { data: senderProfile } = await supabase
+    .from("profiles").select("full_name, handle").eq("id", senderId).maybeSingle();
+  const { data: senderExtra } = await supabase
+    .from("creator_profiles").select("channel_name").eq("user_id", senderId).maybeSingle();
+  const creatorName = senderExtra?.channel_name || senderProfile?.full_name || senderProfile?.handle || "Un formatore";
+
+  let emails = null;
+  try { emails = require("./emails"); } catch {}
 
   for (;;) {
     let q = supabase.from("follows")
@@ -215,16 +226,16 @@ async function fanOutBroadcast(supabase, broadcast, senderId) {
       .in("user_id", fanIds);
     const mutedSet = new Set((muted || []).map((m) => m.user_id));
 
-    const rows = batch
-      .filter((f) => !mutedSet.has(f.fan_id))
-      .map((f) => ({
-        user_id: f.fan_id,
-        type: "broadcast",
-        title: broadcast.title,
-        body: broadcast.body,
-        ref_id: broadcast.id,
-        read: false,
-      }));
+    const activeFans = batch.filter((f) => !mutedSet.has(f.fan_id)).map((f) => f.fan_id);
+
+    const rows = activeFans.map((id) => ({
+      user_id: id,
+      type: "broadcast",
+      title: broadcast.title,
+      body: broadcast.body,
+      ref_id: broadcast.id,
+      read: false,
+    }));
 
     if (rows.length > 0) {
       let { error: insErr } = await supabase.from("notifications").insert(rows);
@@ -238,9 +249,37 @@ async function fanOutBroadcast(supabase, broadcast, senderId) {
       }
     }
 
+    // Email parallel: fetch email+name per i fan attivi del batch e invia.
+    // Soft-fail per ogni mail (errore di un recipient non blocca gli altri).
+    if (emails && activeFans.length > 0) {
+      try {
+        const { data: profiles } = await supabase
+          .from("profiles").select("id, full_name").in("id", activeFans);
+        const profMap = new Map((profiles || []).map((p) => [p.id, p.full_name]));
+        // Service-role può leggere auth.users via admin API getUserById.
+        // Per evitare N round-trip, qui semplifichiamo: 1 lookup per fan.
+        // (Per scale > 1k follower, sostituire con bulk/queue.)
+        await Promise.all(activeFans.map(async (fanId) => {
+          try {
+            const { data: au } = await supabase.auth.admin.getUserById(fanId);
+            const email = au?.user?.email;
+            if (!email) return;
+            await emails.sendBroadcastReceived({
+              email,
+              name: profMap.get(fanId) || "",
+              creator_name: creatorName,
+            });
+            totalMailed++;
+          } catch {}
+        }));
+      } catch (e) {
+        console.warn("[fanout:email]", e.message);
+      }
+    }
+
     lastSeen = batch[batch.length - 1].fan_id;
     if (batch.length < FANOUT_PAGE_SIZE) break;
   }
 
-  console.log(`[fanout] broadcast=${broadcast.id} delivered=${totalDelivered}`);
+  console.log(`[fanout] broadcast=${broadcast.id} notifications=${totalDelivered} emails=${totalMailed}`);
 }
