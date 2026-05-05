@@ -274,12 +274,13 @@ export default function Pricing() {
               ) : (
                 <Button
                   variant={meta.featured ? "default" : "outline"}
-                  disabled={busy === p.id || !p.external_payment_link}
+                  disabled={busy === p.id || (!p.external_payment_link && !p.stripe_price_id)}
                   onClick={() => subscribe(p)}
                 >
                   {busy === p.id ? <Loader2 className="w-4 h-4 animate-spin" /> :
-                    p.external_payment_link ? <>{meta.cta} <ExternalLink className="w-3.5 h-3.5 ml-1" /></> :
-                    "Coming soon"}
+                    (p.stripe_price_id || p.external_payment_link)
+                      ? <>{meta.cta} {p.external_payment_link && !p.stripe_price_id && <ExternalLink className="w-3.5 h-3.5 ml-1" />}</>
+                      : "Coming soon"}
                 </Button>
               )}
             </div>

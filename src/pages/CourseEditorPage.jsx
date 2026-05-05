@@ -21,6 +21,13 @@ export default function CourseEditorPage() {
   const [lessons, setLessons] = useState([]);
   const [activeLessonId, setActiveLessonId] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Default payment link salvato sul profilo: se settato, lo auto-popoliamo
+  // sui nuovi corsi senza external_payment_link. Se l'utente lo inserisce
+  // manualmente sul corso E NON ce l'ha sul profilo, scatta il popup conferma
+  // "vuoi salvarlo come default per i prossimi corsi?".
+  const [profileDefaultPaymentLink, setProfileDefaultPaymentLink] = useState(null);
+  const [savePaymentPrompt, setSavePaymentPrompt] = useState(null); // { link } | null
+  const promptedRef = useRef(false);
   const [error, setError] = useState("");
   const [savingState, setSavingState] = useState(null); // 'saving' | 'saved' | 'error' | null
   const [showWizard, setShowWizard] = useState(false);
@@ -47,7 +54,23 @@ export default function CourseEditorPage() {
           setLoading(false);
           return;
         }
-        setCourse(r.course);
+        // Fetch parallelo del default payment link dal profilo. Se il corso
+        // non ha external_payment_link e il profilo sì, auto-popoliamo.
+        const { data: profile } = await supabase
+          .from("creator_profiles")
+          .select("external_payment_link")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        const defaultLink = profile?.external_payment_link || null;
+        if (!cancelled) setProfileDefaultPaymentLink(defaultLink);
+
+        const courseToSet = { ...r.course };
+        if (!courseToSet.external_payment_link && defaultLink) {
+          courseToSet.external_payment_link = defaultLink;
+          // Persist the auto-fill (one-time, on load)
+          coursesApi.update(id, { external_payment_link: defaultLink }).catch(() => {});
+        }
+        setCourse(courseToSet);
         setLessons(r.lessons || []);
         if (r.lessons?.length) setActiveLessonId(r.lessons[0].id);
 
@@ -99,6 +122,22 @@ export default function CourseEditorPage() {
 
   // ---- Course autosave (debounced 800ms)
   const updateCourse = (next) => {
+    // Detect first-time payment link entry: l'utente ha inserito un link
+    // sul corso, non ce l'aveva sul profilo, non gliel'abbiamo mai chiesto.
+    // Mostra popup chiedendo se salvarlo come default.
+    const newLink = (next.external_payment_link || "").trim();
+    const oldLink = (course?.external_payment_link || "").trim();
+    if (
+      newLink &&
+      newLink !== oldLink &&
+      newLink !== profileDefaultPaymentLink &&
+      !profileDefaultPaymentLink &&
+      !promptedRef.current &&
+      newLink.startsWith("http")
+    ) {
+      promptedRef.current = true;
+      setSavePaymentPrompt({ link: newLink });
+    }
     setCourse(next);
     markDraftDirty();
     if (courseTimerRef.current) clearTimeout(courseTimerRef.current);
@@ -269,6 +308,56 @@ export default function CourseEditorPage() {
           onApply={applyWizard}
         />
       )}
+
+      {savePaymentPrompt && (
+        <SavePaymentLinkPrompt
+          link={savePaymentPrompt.link}
+          onClose={() => setSavePaymentPrompt(null)}
+          onConfirm={async () => {
+            try {
+              await supabase
+                .from("creator_profiles")
+                .upsert({ user_id: user.id, external_payment_link: savePaymentPrompt.link });
+              setProfileDefaultPaymentLink(savePaymentPrompt.link);
+            } catch (err) {
+              alert("Errore salvataggio link nel profilo: " + (err.message || err));
+            } finally {
+              setSavePaymentPrompt(null);
+            }
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function SavePaymentLinkPrompt({ link, onClose, onConfirm }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/70 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-card border border-border rounded-2xl p-6 max-w-md w-full shadow-card" onClick={(e) => e.stopPropagation()}>
+        <h3 className="font-heading font-bold text-lg mb-2">Vuoi salvare questo link nel tuo profilo?</h3>
+        <p className="text-sm text-muted-foreground mb-3">
+          Lo useremo come default su tutti i prossimi corsi che pubblichi — niente più re-inserimento manuale.
+          Puoi sempre cambiarlo per singolo corso.
+        </p>
+        <div className="bg-secondary/40 rounded-lg px-3 py-2 mb-4 text-xs font-mono break-all">
+          {link}
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2 rounded-lg border border-border hover:bg-secondary text-sm font-semibold"
+          >
+            No, solo per questo corso
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-semibold"
+          >
+            Sì, salva nel profilo
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

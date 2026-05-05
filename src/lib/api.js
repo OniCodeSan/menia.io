@@ -118,6 +118,9 @@ export const kpiApi = {
   suggestions: () => request("/creator/suggestions", { requireAuth: true }),
   subscribePlan: (plan_id) => request("/creator/subscribe-plan", { method: "POST", body: { plan_id }, requireAuth: true }),
   activatePlanTest: (plan_id) => request("/creator/activate-plan-test", { method: "POST", body: { plan_id }, requireAuth: true }),
+  promoStatus: () => request("/creator/promo-status"),
+  claimPromo: (external_payment_link) =>
+    request("/creator/claim-promo", { method: "POST", body: { external_payment_link }, requireAuth: true }),
   trackView: (kind, creator_id) =>
     request("/creator/views", { method: "POST", body: { kind, creator_id } })
       .catch(() => {}),

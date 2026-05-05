@@ -117,7 +117,7 @@ export default function CreatorLogin() {
       >
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2 mb-4">
-            <img src="/menia-logo.svg" alt="Menia.io" className="w-10 h-10 rounded-xl" />
+            <img src="/menia-logo.png" alt="Menia.io" className="w-10 h-10 rounded-xl" />
             <span className="font-heading text-2xl font-bold">Menia.io</span>
           </Link>
           <h1 className="font-heading text-3xl font-bold mb-2">

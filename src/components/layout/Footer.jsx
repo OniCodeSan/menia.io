@@ -14,7 +14,7 @@ export default function Footer() {
           <div className="lg:col-span-1">
             <Link to="/" className="flex items-center gap-2 group mb-3">
               <img
-                src="/menia-logo.svg"
+                src="/menia-logo.png"
                 alt="Menia.io"
                 className="w-9 h-9 group-hover:scale-105 transition-transform duration-300"
               />

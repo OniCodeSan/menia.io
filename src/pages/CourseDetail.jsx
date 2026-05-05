@@ -22,6 +22,16 @@ export default function CourseDetail() {
   const [activeLesson, setActiveLesson] = useState(null);
   const [studentCount, setStudentCount] = useState(0);
 
+  // CRITICO: tutti gli hook DEVONO essere chiamati nello stesso ordine ad ogni
+  // render — niente hook dopo early return. useCourseProgress accetta courseId
+  // null/totalLessons=0 (no-op finché data non è caricato).
+  const courseId = data?.course?.id || null;
+  const totalLessons = data?.lessons?.length || 0;
+  const { completedIds, percent: progressPct, markComplete } = useCourseProgress(
+    courseId,
+    totalLessons
+  );
+
   useEffect(() => {
     setLoading(true);
     coursesApi.get(id)
@@ -68,13 +78,11 @@ export default function CourseDetail() {
 
   const { course, lessons, creator, has_access, is_owner, access_reason } = data;
   const previewLesson = lessons?.find((l) => l.is_preview && !l.locked);
-  const { completedIds, percent: progressPct, markComplete } = useCourseProgress(
-    course?.id,
-    lessons?.length || 0
-  );
-  const showPlatformPaywall = !has_access && !is_owner && access_reason === "paywall";
-  const showPaymentCta = !has_access && !is_owner && !showPlatformPaywall && course.external_payment_link;
-  const totalLessons = lessons?.length || 0;
+  // Due tipi di paywall distinti:
+  //   - paid: corso a pagamento, serve acquisto via link del formatore
+  //   - platform: corso free ma utente senza abbonamento Menia
+  const showPaidCoursePaywall = !has_access && !is_owner && access_reason === "paywall_paid";
+  const showPlatformPaywall   = !has_access && !is_owner && access_reason === "paywall_platform";
   const landing = course.landing_data || {};
   const outcomes = landing.learning_outcomes || [];
   const targetAudience = landing.target_audience || [];
@@ -162,16 +170,22 @@ export default function CourseDetail() {
             </Link>
           )}
         </div>
-        {showPaymentCta && (
+        {showPaidCoursePaywall && course.external_payment_link && (
           <a
             href={course.external_payment_link}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-base hover:bg-primary/90 glow-primary"
           >
-            <Crown className="w-4 h-4" /> Accedi al corso completo
+            <Crown className="w-4 h-4" /> Acquista il corso — €{Number(course.price).toFixed(2).replace(/\.00$/, "")}
             <ExternalLink className="w-4 h-4" />
           </a>
+        )}
+        {showPaidCoursePaywall && !course.external_payment_link && (
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 text-sm">
+            <Lock className="w-4 h-4" />
+            Corso a pagamento — il formatore non ha ancora configurato il checkout. Contatta il formatore per acquistare.
+          </div>
         )}
       </section>
 
@@ -241,7 +255,7 @@ export default function CourseDetail() {
               {previewLesson.body && (
                 <div className="prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: safeLessonHtml(previewLesson.body) }} />
               )}
-              {showPaymentCta && (
+              {showPaidCoursePaywall && course.external_payment_link && (
                 <div className="border-t border-border/20 pt-3">
                   <a
                     href={course.external_payment_link}
@@ -249,7 +263,7 @@ export default function CourseDetail() {
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90"
                   >
-                    <Crown className="w-4 h-4" /> Accedi a tutte le {totalLessons} lezioni
+                    <Crown className="w-4 h-4" /> Accedi a tutte le {totalLessons} lezioni — €{Number(course.price).toFixed(2).replace(/\.00$/, "")}
                   </a>
                 </div>
               )}
@@ -439,7 +453,7 @@ export default function CourseDetail() {
       )}
 
       {/* PREZZO + CTA FINALE */}
-      {showPaymentCta && (
+      {showPaidCoursePaywall && course.external_payment_link && (
         <section className="my-10 text-center bg-primary/5 border border-primary/20 rounded-2xl p-8">
           <p className="text-sm text-muted-foreground uppercase tracking-wide mb-2">Pronto a iniziare?</p>
           <p className="font-heading text-4xl font-bold text-primary mb-4">

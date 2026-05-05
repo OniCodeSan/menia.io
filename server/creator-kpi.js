@@ -446,5 +446,191 @@ module.exports = function createKpiRouter({ supabase, requireUserJWT, requireAdm
     });
   });
 
+  // ---------------------------------------------------------------------------
+  // Creator promo (mesi gratis ai primi N formatori)
+  //
+  //   tier 3: primi 15  → 3 mesi
+  //   tier 2: 16°-45°   → 2 mesi
+  //   tier 1: dal 46°   → 1 mese (standard, niente grant tracciato)
+  //
+  // Anti-abuso: ogni email + ogni external_payment_link può essere usato UNA
+  // volta sola (UNIQUE constraints in DB). Counter pubblico via view.
+  // ---------------------------------------------------------------------------
+  const PROMO_TIERS = [
+    { tier: 3, threshold: 15, months: 3 },
+    { tier: 2, threshold: 45, months: 2 },
+  ];
+
+  function computeCurrentTier(totalGrants) {
+    if (totalGrants < 15) return PROMO_TIERS[0];
+    if (totalGrants < 45) return PROMO_TIERS[1];
+    return { tier: 1, threshold: Infinity, months: 1 };
+  }
+
+  // Hash sha256 del link (lower+trim+strip query) per dedup non-banale.
+  function normalizePaymentLink(link) {
+    if (!link || typeof link !== "string") return "";
+    try {
+      const url = new URL(link.trim().toLowerCase());
+      // Rimuove query/fragment (variabili UTM ecc. non devono escludere il dedup)
+      return `${url.protocol}//${url.hostname}${url.pathname}`.replace(/\/$/, "");
+    } catch {
+      return link.trim().toLowerCase();
+    }
+  }
+
+  function hashLink(normalized) {
+    return require("crypto").createHash("sha256").update(normalized).digest("hex");
+  }
+
+  // GET /api/creator/promo-status — pubblico, counter live per la home.
+  router.get("/promo-status", async (req, res) => {
+    const { data, error } = await supabase
+      .from("creator_promo_counter")
+      .select("total_grants")
+      .maybeSingle();
+    if (error) {
+      console.error("[promo-status]", error.message);
+      return res.json({ tier: 1, months: 1, slots_remaining: null, total_used: 0 });
+    }
+    const total = data?.total_grants || 0;
+    const cur = computeCurrentTier(total);
+    const slots_remaining = cur.threshold === Infinity
+      ? null
+      : Math.max(0, cur.threshold - total);
+    return res.json({
+      tier: cur.tier,
+      months: cur.months,
+      slots_remaining,
+      total_used: total,
+    });
+  });
+
+  // POST /api/creator/claim-promo
+  // Body: { external_payment_link }
+  // Auth: JWT (deve essere creator già registrato)
+  // Effetto: registra grant + estende l'attuale creator_plan_subscription di N mesi
+  //          (o crea trial-extended se non c'è ancora una subscription).
+  router.post("/claim-promo", async (req, res) => {
+    const user = await requireUserJWT(req);
+    if (!user) return res.status(401).json({ error: "Autenticazione richiesta" });
+
+    const { external_payment_link } = req.body || {};
+    if (!external_payment_link || typeof external_payment_link !== "string") {
+      return res.status(400).json({ error: "Link pagamento richiesto per attivare la promo" });
+    }
+    const normalized = normalizePaymentLink(external_payment_link);
+    if (!normalized.startsWith("http")) {
+      return res.status(400).json({ error: "Link non valido" });
+    }
+    const linkHash = hashLink(normalized);
+    const emailNormalized = (user.email || "").trim().toLowerCase();
+
+    // Anti-abuso 1: email già usata
+    const { data: existsEmail } = await supabase
+      .from("creator_promo_grants")
+      .select("id, months_granted")
+      .eq("email_normalized", emailNormalized)
+      .maybeSingle();
+    if (existsEmail) {
+      return res.status(409).json({
+        error: "email_already_used",
+        message: "Questa email ha già usufruito della promo. Non è cumulabile.",
+      });
+    }
+
+    // Anti-abuso 2: link già usato
+    const { data: existsLink } = await supabase
+      .from("creator_promo_grants")
+      .select("id, months_granted")
+      .eq("payment_link_hash", linkHash)
+      .maybeSingle();
+    if (existsLink) {
+      return res.status(409).json({
+        error: "link_already_used",
+        message: "Questo link di pagamento è già stato utilizzato. Non è cumulabile.",
+      });
+    }
+
+    // Compute tier corrente
+    const { data: counter } = await supabase
+      .from("creator_promo_counter")
+      .select("total_grants")
+      .maybeSingle();
+    const total = counter?.total_grants || 0;
+    const cur = computeCurrentTier(total);
+
+    // Insert grant (UNIQUE constraints sono il safety net contro race conditions)
+    const { error: insertErr } = await supabase
+      .from("creator_promo_grants")
+      .insert({
+        creator_id: user.id,
+        email_normalized: emailNormalized,
+        payment_link_hash: linkHash,
+        months_granted: cur.months,
+        tier: cur.tier,
+      });
+    if (insertErr) {
+      // Race condition o duplicati: il vincolo UNIQUE ha bloccato
+      if (insertErr.code === "23505") {
+        return res.status(409).json({
+          error: "duplicate",
+          message: "Promo già utilizzata con questa email o questo link.",
+        });
+      }
+      console.error("[claim-promo:insert]", insertErr.message);
+      return res.status(500).json({ error: "Errore registrazione promo" });
+    }
+
+    // Estende la creator_plan_subscription esistente di N mesi (o crea base trial)
+    const monthsMs = cur.months * 30 * 86400000;
+    const { data: existingSub } = await supabase
+      .from("creator_plan_subscriptions")
+      .select("id, expires_at")
+      .eq("creator_id", user.id)
+      .eq("status", "active")
+      .maybeSingle();
+    const baseExpiry = existingSub?.expires_at
+      ? new Date(existingSub.expires_at).getTime()
+      : Date.now();
+    const newExpiry = new Date(baseExpiry + monthsMs).toISOString();
+
+    if (existingSub) {
+      await supabase
+        .from("creator_plan_subscriptions")
+        .update({ expires_at: newExpiry, updated_at: new Date().toISOString() })
+        .eq("id", existingSub.id);
+    } else {
+      await supabase.from("creator_plan_subscriptions").insert({
+        creator_id: user.id,
+        plan_id: "starter", // default promozionale: Starter
+        status: "active",
+        started_at: new Date().toISOString(),
+        expires_at: newExpiry,
+        external_reference: `promo_tier${cur.tier}`,
+      });
+    }
+
+    // Salva il link nel profilo se non già presente (auto-fill futuri)
+    const { data: profile } = await supabase
+      .from("creator_profiles")
+      .select("external_payment_link")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!profile?.external_payment_link) {
+      await supabase
+        .from("creator_profiles")
+        .upsert({ user_id: user.id, external_payment_link: external_payment_link.trim() });
+    }
+
+    return res.json({
+      ok: true,
+      months_granted: cur.months,
+      tier: cur.tier,
+      expires_at: newExpiry,
+      message: `Promo attivata: ${cur.months} mesi gratis sul piano formatore.`,
+    });
+  });
+
   return router;
 };

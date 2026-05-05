@@ -1052,5 +1052,28 @@ module.exports = function createAdminRouter({ supabase, requireAdminJWT, emails 
     }
   });
 
+  // ---------------------------------------------------------------------------
+  // POST /api/admin/email-test
+  // Body: { to } — manda una mail di test per validare la config SMTP/Resend.
+  // ---------------------------------------------------------------------------
+  router.post("/email-test", async (req, res) => {
+    if (!emails) return res.status(500).json({ error: "emails module not wired" });
+    const { to } = req.body || {};
+    if (!to || typeof to !== "string" || !to.includes("@")) {
+      return res.status(400).json({ error: "to (email) richiesto" });
+    }
+    const r = await emails.sendCustom({
+      to,
+      subject: "[Menia] Test email — config check",
+      html: `<p>Se ricevi questa email, la configurazione SMTP è corretta.</p>
+             <p>Provider utilizzato: <code>${process.env.EMAIL_PROVIDER || "smtp2go"}</code></p>
+             <p>From: <code>${process.env.EMAIL_FROM || "Menia.io <noreply@menia.io>"}</code></p>
+             <p>Timestamp: ${new Date().toISOString()}</p>`,
+      text: "Menia email config test — see HTML version",
+    });
+    if (r.ok) return res.json(r);
+    return res.status(500).json(r);
+  });
+
   return router;
 };

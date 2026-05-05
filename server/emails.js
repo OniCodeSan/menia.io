@@ -1,13 +1,88 @@
-const { Resend } = require("resend");
+// =============================================================================
+// Email transactional layer.
+//
+// Provider pluggable via EMAIL_PROVIDER:
+//   "smtp2go" → nodemailer + SMTP2GO (default in produzione)
+//   "resend"  → Resend HTTP API (fallback / legacy)
+//
+// Se mancano le creds del provider scelto, prova l'altro come fallback.
+// Se mancano entrambi, log + no-op (utile in dev senza config email).
+// =============================================================================
 
-const resend = process.env.RESEND_API_KEY
-  ? new Resend(process.env.RESEND_API_KEY)
-  : null;
-
+const PROVIDER = (process.env.EMAIL_PROVIDER || "smtp2go").toLowerCase();
 const FROM = process.env.EMAIL_FROM || "Menia.io <noreply@menia.io>";
 const FRONTEND_URL = process.env.FRONTEND_URL || "https://menia.io";
 
-const escapeHtml = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+// ---------- SMTP2GO transport (lazy) -----------------------------------------
+let _smtpTransport = null;
+function getSmtpTransport() {
+  if (_smtpTransport) return _smtpTransport;
+  const host = process.env.SMTP_HOST;
+  const port = Number(process.env.SMTP_PORT || 2525);
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  if (!host || !user || !pass) return null;
+  const nodemailer = require("nodemailer");
+  _smtpTransport = nodemailer.createTransport({
+    host,
+    port,
+    secure: port === 465 || port === 8465 || port === 443,
+    auth: { user, pass },
+    tls: { rejectUnauthorized: true },
+  });
+  return _smtpTransport;
+}
+
+// ---------- Resend client (lazy fallback) ------------------------------------
+let _resend = null;
+function getResend() {
+  if (_resend) return _resend;
+  if (!process.env.RESEND_API_KEY) return null;
+  const { Resend } = require("resend");
+  _resend = new Resend(process.env.RESEND_API_KEY);
+  return _resend;
+}
+
+// ---------- Low-level send ---------------------------------------------------
+// Restituisce { ok: true, provider } o { ok: false, error } senza throw.
+async function sendMail({ to, subject, html, text }) {
+  if (!to || !subject || !html) {
+    return { ok: false, error: "missing to/subject/html" };
+  }
+
+  const order = PROVIDER === "resend" ? ["resend", "smtp2go"] : ["smtp2go", "resend"];
+  let lastError = null;
+
+  for (const p of order) {
+    try {
+      if (p === "smtp2go") {
+        const t = getSmtpTransport();
+        if (!t) continue;
+        const info = await t.sendMail({ from: FROM, to, subject, html, text });
+        return { ok: true, provider: "smtp2go", id: info.messageId };
+      }
+      if (p === "resend") {
+        const r = getResend();
+        if (!r) continue;
+        const out = await r.emails.send({ from: FROM, to, subject, html });
+        return { ok: true, provider: "resend", id: out.data?.id };
+      }
+    } catch (err) {
+      lastError = err;
+      console.warn(`[emails] ${p} failed:`, err.message);
+    }
+  }
+
+  if (lastError) {
+    console.error("[emails] all providers failed:", lastError.message);
+    return { ok: false, error: lastError.message };
+  }
+  console.log("[emails] no provider configured, skipping send");
+  return { ok: false, error: "no_provider_configured" };
+}
+
+const escapeHtml = (s) => String(s || "")
+  .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 function layout(body) {
   return `<!DOCTYPE html>
@@ -26,7 +101,7 @@ function layout(body) {
   </td></tr>
   <tr><td style="padding:24px 40px;border-top:1px solid #222;text-align:center">
     <p style="margin:0 0 8px;font-size:12px;color:#666">
-      <a href="${FRONTEND_URL}" style="color:#7c3aed;text-decoration:none">menia.io</a> — La piattaforma per creator
+      <a href="${FRONTEND_URL}" style="color:#7c3aed;text-decoration:none">menia.io</a> — Formazione online dai migliori formatori italiani
     </p>
     <p style="margin:0;font-size:11px;color:#555">
       <a href="${FRONTEND_URL}/privacy-settings" style="color:#888;text-decoration:underline">Gestisci preferenze email</a> ·
@@ -42,7 +117,6 @@ function layout(body) {
 
 const emails = {
   async sendWelcome({ email, name }) {
-    if (!resend) { console.log("[emails] resend not configured, skipping welcome"); return; }
     const firstName = escapeHtml((name || "").split(" ")[0] || "Ciao");
     const html = layout(`
       <h1 style="margin:0 0 16px;font-size:24px;color:#fff">Benvenuto su Menia.io! 🎉</h1>
@@ -50,109 +124,29 @@ const emails = {
         Ciao <strong>${firstName}</strong>, il tuo account è stato creato con successo.
       </p>
       <p style="margin:0 0 24px;font-size:15px;color:#ccc;line-height:1.6">
-        Esplora i creator, scopri contenuti esclusivi e supporta chi ami con abbonamenti e token.
+        Esplora i corsi, partecipa alla community e applica subito quello che impari.
       </p>
       <table cellpadding="0" cellspacing="0" style="margin:0 auto 16px">
         <tr><td style="background:#7c3aed;border-radius:8px;padding:12px 32px">
-          <a href="${FRONTEND_URL}/explore" style="color:#fff;text-decoration:none;font-size:15px;font-weight:600">Esplora i creator</a>
+          <a href="${FRONTEND_URL}/courses" style="color:#fff;text-decoration:none;font-size:15px;font-weight:600">Esplora i corsi</a>
         </td></tr>
       </table>
     `);
-    try {
-      await resend.emails.send({ from: FROM, to: email, subject: "Benvenuto su Menia.io! 🎉", html });
-      console.log(`[emails] welcome sent to ${email}`);
-    } catch (err) {
-      console.error("[emails] welcome error:", err.message);
-    }
+    const r = await sendMail({ to: email, subject: "Benvenuto su Menia.io! 🎉", html });
+    if (r.ok) console.log(`[emails] welcome sent to ${email} via ${r.provider}`);
+    return r;
   },
 
-  async sendTokenPurchase({ email, name, tokens, amountCents }) {
-    if (!resend) { console.log("[emails] resend not configured, skipping token receipt"); return; }
-    const firstName = escapeHtml((name || "").split(" ")[0] || "Ciao");
-    const amount = (amountCents / 100).toFixed(2).replace(".", ",");
-    const html = layout(`
-      <h1 style="margin:0 0 16px;font-size:24px;color:#fff">Ricarica confermata ✅</h1>
-      <p style="margin:0 0 24px;font-size:15px;color:#ccc;line-height:1.6">
-        Ciao <strong>${firstName}</strong>, la tua ricarica è stata accreditata con successo.
-      </p>
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a24;border-radius:12px;border:1px solid #222;margin:0 0 24px">
-        <tr>
-          <td style="padding:16px 20px;border-bottom:1px solid #222">
-            <p style="margin:0;font-size:13px;color:#888">Token accreditati</p>
-            <p style="margin:4px 0 0;font-size:20px;font-weight:700;color:#f59e0b">${tokens} Token</p>
-          </td>
-          <td style="padding:16px 20px;border-bottom:1px solid #222;text-align:right">
-            <p style="margin:0;font-size:13px;color:#888">Importo pagato</p>
-            <p style="margin:4px 0 0;font-size:20px;font-weight:700;color:#fff">€${amount}</p>
-          </td>
-        </tr>
-      </table>
-      <p style="margin:0 0 24px;font-size:14px;color:#999;line-height:1.6">
-        I token sono già disponibili nel tuo wallet. Usali per sbloccare contenuti premium o supportare i creator.
-      </p>
-      <table cellpadding="0" cellspacing="0" style="margin:0 auto">
-        <tr><td style="background:#7c3aed;border-radius:8px;padding:12px 32px">
-          <a href="${FRONTEND_URL}/student-dashboard?tab=wallet" style="color:#fff;text-decoration:none;font-size:15px;font-weight:600">Vai al wallet</a>
-        </td></tr>
-      </table>
-    `);
-    try {
-      await resend.emails.send({ from: FROM, to: email, subject: `Ricarica confermata — ${tokens} Token`, html });
-      console.log(`[emails] token purchase receipt sent to ${email}`);
-    } catch (err) {
-      console.error("[emails] token purchase error:", err.message);
-    }
+  // Generico: usato da admin email-test e da altri flussi runtime.
+  async sendCustom({ to, subject, html, text }) {
+    return sendMail({ to, subject, html, text });
   },
 
-  async sendPayoutUpdate({ email, name, tokenAmount, euroAmount, status, reason }) {
-    if (!resend) { console.log("[emails] resend not configured, skipping payout update"); return; }
-    const firstName = escapeHtml((name || "").split(" ")[0] || "Creator");
-    const statusLabels = {
-      processing: { label: "In elaborazione", color: "#f59e0b", emoji: "⏳" },
-      paid: { label: "Pagato", color: "#22c55e", emoji: "✅" },
-      rejected: { label: "Rifiutato", color: "#ef4444", emoji: "❌" },
-    };
-    const s = statusLabels[status] || { label: status, color: "#888", emoji: "📋" };
-    const html = layout(`
-      <h1 style="margin:0 0 16px;font-size:24px;color:#fff">Aggiornamento Payout ${s.emoji}</h1>
-      <p style="margin:0 0 24px;font-size:15px;color:#ccc;line-height:1.6">
-        Ciao <strong>${firstName}</strong>, il tuo payout è stato aggiornato.
-      </p>
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a24;border-radius:12px;border:1px solid #222;margin:0 0 24px">
-        <tr>
-          <td style="padding:16px 20px;border-bottom:1px solid #222">
-            <p style="margin:0;font-size:13px;color:#888">Token</p>
-            <p style="margin:4px 0 0;font-size:20px;font-weight:700;color:#f59e0b">${tokenAmount} Token</p>
-          </td>
-          <td style="padding:16px 20px;border-bottom:1px solid #222;text-align:right">
-            <p style="margin:0;font-size:13px;color:#888">Importo</p>
-            <p style="margin:4px 0 0;font-size:20px;font-weight:700;color:#fff">€${Number(euroAmount).toFixed(2)}</p>
-          </td>
-        </tr>
-        <tr>
-          <td colspan="2" style="padding:16px 20px">
-            <p style="margin:0;font-size:13px;color:#888">Stato</p>
-            <p style="margin:4px 0 0;font-size:16px;font-weight:700;color:${s.color}">${s.label}</p>
-            ${reason ? `<p style="margin:8px 0 0;font-size:13px;color:#999">${escapeHtml(reason)}</p>` : ""}
-          </td>
-        </tr>
-      </table>
-      ${status === "paid" ? `<p style="margin:0 0 24px;font-size:14px;color:#999;line-height:1.6">
-        Il pagamento è stato effettuato sul metodo di pagamento associato al tuo account. Controlla il tuo conto entro 2-5 giorni lavorativi.
-      </p>` : ""}
-      <table cellpadding="0" cellspacing="0" style="margin:0 auto">
-        <tr><td style="background:#7c3aed;border-radius:8px;padding:12px 32px">
-          <a href="${FRONTEND_URL}/dashboard?tab=wallet" style="color:#fff;text-decoration:none;font-size:15px;font-weight:600">Vai al wallet</a>
-        </td></tr>
-      </table>
-    `);
-    try {
-      await resend.emails.send({ from: FROM, to: email, subject: `Payout ${s.label} — €${Number(euroAmount).toFixed(2)}`, html });
-      console.log(`[emails] payout update sent to ${email}`);
-    } catch (err) {
-      console.error("[emails] payout update error:", err.message);
-    }
-  },
+  // Helpers legacy (token wallet rimosso in T1) — non più chiamati ma lasciati
+  // per backward compat. Possono essere rimossi quando avremo conferma di
+  // nessun caller residuo.
+  async sendTokenPurchase() { /* deprecated — token economy removed */ return { ok: false, error: "deprecated" }; },
+  async sendPayoutUpdate()   { /* deprecated — payout flow removed   */ return { ok: false, error: "deprecated" }; },
 };
 
 module.exports = emails;

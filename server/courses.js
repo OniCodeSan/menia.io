@@ -158,11 +158,23 @@ module.exports = function createCoursesRouter({ supabase, requireUserJWT }) {
       userId ? access.hasActivePlatformAccess(supabase, userId) : Promise.resolve(false),
     ]);
     const isOwner = userId && course.creator_id === userId;
-    const has_access = isOwner || platformAccess || granted;
+    // Gating policy:
+    //  - course.price === 0  → corso "incluso nell'abbonamento Menia": basta
+    //    avere platform_subscriptions attivo (trial o paid) per accedere.
+    //  - course.price > 0    → vendita diretta del formatore. L'abbonamento
+    //    Menia NON sblocca questi corsi: serve un grant esplicito in
+    //    course_access (acquisto via link Stripe del formatore).
+    //  - is_owner sempre full access; preview lessons (is_preview) gratis a tutti.
+    const isPaidCourse = Number(course.price) > 0;
+    const has_access = isOwner || granted || (!isPaidCourse && platformAccess);
+    // access_reason distingue 2 tipi di blocco lato client:
+    //   "paywall_paid"     → corso a pagamento del formatore: mostra link checkout
+    //   "paywall_platform" → corso free ma utente senza abbonamento Menia
     const access_reason = isOwner ? "owner"
-      : platformAccess ? "platform"
       : granted ? "grant"
-      : "paywall";
+      : (!isPaidCourse && platformAccess) ? "platform"
+      : isPaidCourse ? "paywall_paid"
+      : "paywall_platform";
 
     const { data: lessons, error: lessonsErr } = await supabase
       .from("course_lessons")

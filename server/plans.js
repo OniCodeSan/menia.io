@@ -14,7 +14,7 @@ module.exports = function createPlansRouter({ supabase, requireUserJWT }) {
   router.get("/", async (req, res) => {
     const { data, error } = await supabase
       .from("creator_plans")
-      .select("id, name, price_monthly, external_payment_link, max_courses, max_live_per_month, analytics_level, priority_visibility, support_level, position, contact_only")
+      .select("id, name, price_monthly, external_payment_link, stripe_price_id, max_courses, max_live_per_month, analytics_level, priority_visibility, support_level, position, contact_only")
       .eq("is_active", true)
       .order("position", { ascending: true });
     if (error) {

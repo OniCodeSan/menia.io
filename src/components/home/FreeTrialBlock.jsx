@@ -14,11 +14,21 @@ export default function FreeTrialBlock() {
     let cancelled = false;
     (async () => {
       // Cerca un corso pubblicato che abbia almeno una lezione is_preview=true.
+      // Step 1: trova course_id con preview lesson; step 2: fetch course details.
+      // (Niente embedded join: la FK courses↔course_lessons non si chiama "lessons"
+      //  e PostgREST farebbe 400.)
+      const { data: previewRows } = await supabase
+        .from("course_lessons")
+        .select("course_id")
+        .eq("is_preview", true)
+        .limit(20);
+      const courseIds = [...new Set((previewRows || []).map((r) => r.course_id))];
+      if (!courseIds.length) return;
       const { data } = await supabase
         .from("courses")
-        .select("id, title, description, cover_url, creator_id, lessons!inner(id, is_preview)")
+        .select("id, title, description, cover_url, creator_id")
+        .in("id", courseIds)
         .eq("is_published", true)
-        .eq("lessons.is_preview", true)
         .limit(1)
         .maybeSingle();
       if (!cancelled && data) setCourse(data);
