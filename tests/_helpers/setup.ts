@@ -110,12 +110,16 @@ export function stripeSignature(rawBody: string, secret = process.env.STRIPE_WEB
   return `t=${ts},v1=${sig}`;
 }
 
-// Trova un corso con almeno una lezione locked (non preview) per i test di access gating.
+// Trova un corso GRATIS con almeno una lezione locked (non preview) per
+// testare il gating platform-subscription. Filtra price=0 perché i corsi
+// a pagamento (price>0) sono gated separatamente da course_access — il
+// platform sub non li sblocca (vedi server/courses.js gating policy).
 export async function findLockedLessonInPublishedCourse(): Promise<{ courseId: string; lessonId: string } | null> {
   const { data: courses } = await adminSupabase
     .from("courses")
     .select("id")
     .eq("is_published", true)
+    .or("price.is.null,price.eq.0")
     .limit(20);
   if (!courses?.length) return null;
 
