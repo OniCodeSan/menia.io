@@ -156,10 +156,13 @@ async function handlePlatformEvent(supabase, event, { userId, obj, nowIso }) {
         updated_at: nowIso,
       }, { onConflict: "user_id" });
 
-      // Email solo alla prima attivazione (non ad ogni rinnovo invoice.paid)
+      // Email solo alla prima attivazione (non ad ogni rinnovo invoice.paid).
+      // Fire-and-forget: il webhook deve rispondere entro 100s a Stripe; un
+      // SMTP lento bloccherebbe la response → retry storm. Errore tracciato.
       if (!wasActive && event.type === "checkout.session.completed") {
         const u = await fetchUserEmailName(supabase, userId);
-        if (u) emails.sendSubscriptionActivated({ ...u, amount: "0,99" }).catch(() => {});
+        if (u) emails.sendSubscriptionActivated({ ...u, amount: "0,99" })
+          .catch((e) => { console.warn("[email:sub-activated]", e?.message); global._silentReport && global._silentReport("email-sub-activated")(e); });
       }
       break;
     }
@@ -195,7 +198,8 @@ async function handlePlatformEvent(supabase, event, { userId, obj, nowIso }) {
         .update({ status: "canceled", cancel_at_period_end: true, updated_at: nowIso })
         .eq("user_id", userId);
       const u = await fetchUserEmailName(supabase, userId);
-      if (u) emails.sendSubscriptionCanceled(u).catch(() => {});
+      if (u) emails.sendSubscriptionCanceled(u)
+        .catch((e) => { console.warn("[email:sub-canceled]", e?.message); global._silentReport && global._silentReport("email-sub-canceled")(e); });
       break;
     }
 
@@ -237,7 +241,7 @@ async function handleCreatorPlanEvent(supabase, event, { userId, planId, obj, no
         external_reference: subscriptionId || "stripe",
         granted_by: userId,
       });
-      try { await supabase.rpc("compute_creator_kpi", { p_creator_id: userId }); } catch {}
+      try { await supabase.rpc("compute_creator_kpi", { p_creator_id: userId }); } catch (e) { global._silentReport && global._silentReport("kpi-compute")(e); }
 
       // Email solo alla prima attivazione (checkout, non rinnovi)
       if (event.type === "checkout.session.completed") {
@@ -249,7 +253,8 @@ async function handleCreatorPlanEvent(supabase, event, { userId, planId, obj, no
           const planLabel = plan
             ? `${plan.name}${plan.price_monthly ? " — €" + Number(plan.price_monthly).toFixed(2).replace(".", ",") + "/mese" : ""}`
             : planId;
-          emails.sendCreatorPlanActivated({ ...u, plan_name: planLabel }).catch(() => {});
+          emails.sendCreatorPlanActivated({ ...u, plan_name: planLabel })
+            .catch((e) => { console.warn("[email:creator-plan-activated]", e?.message); global._silentReport && global._silentReport("email-creator-plan")(e); });
         }
       }
       break;

@@ -45,7 +45,7 @@ function getResend() {
 
 // ---------- Low-level send ---------------------------------------------------
 // Restituisce { ok: true, provider } o { ok: false, error } senza throw.
-async function sendMail({ to, subject, html, text }) {
+async function sendMail({ to, subject, html, text, attachments, headers }) {
   if (!to || !subject || !html) {
     return { ok: false, error: "missing to/subject/html" };
   }
@@ -58,13 +58,31 @@ async function sendMail({ to, subject, html, text }) {
       if (p === "smtp2go") {
         const t = getSmtpTransport();
         if (!t) continue;
-        const info = await t.sendMail({ from: FROM, to, subject, html, text });
+        const nodemailerAttachments = (attachments || []).map((a) => ({
+          filename: a.filename,
+          content: a.content,
+          contentType: a.contentType || "application/octet-stream",
+        }));
+        const info = await t.sendMail({
+          from: FROM, to, subject, html, text,
+          attachments: nodemailerAttachments.length ? nodemailerAttachments : undefined,
+          headers: headers || undefined,
+        });
         return { ok: true, provider: "smtp2go", id: info.messageId };
       }
       if (p === "resend") {
         const r = getResend();
         if (!r) continue;
-        const out = await r.emails.send({ from: FROM, to, subject, html });
+        const resendAttachments = (attachments || []).map((a) => ({
+          filename: a.filename,
+          content: Buffer.isBuffer(a.content) ? a.content.toString("base64") : a.content,
+          contentType: a.contentType,
+        }));
+        const out = await r.emails.send({
+          from: FROM, to, subject, html,
+          attachments: resendAttachments.length ? resendAttachments : undefined,
+          headers: headers || undefined,
+        });
         return { ok: true, provider: "resend", id: out.data?.id };
       }
     } catch (err) {
@@ -453,10 +471,13 @@ Attiva abbonamento: ${FRONTEND_URL}/billing
   },
 
   // Broadcast ricevuto (uno studente segue un creator che ha pubblicato un aggiornamento)
-  async sendBroadcastReceived({ email, name, creator_name }) {
+  async sendBroadcastReceived({ email, name, creator_name, user_id }) {
     const firstName = escapeHtml((name || "").split(" ")[0] || "Ciao");
     const creator = escapeHtml(creator_name || "Un formatore");
     const subject = `${creator_name || "Un formatore"} ha pubblicato un aggiornamento`;
+    const unsubUrl = (typeof global._genUnsubscribeUrl === "function" && user_id)
+      ? global._genUnsubscribeUrl(user_id, "marketing")
+      : `${FRONTEND_URL}/email/unsubscribe`;
     const html = layout(`
       <h1 style="margin:0 0 16px;font-size:24px;color:#0a0a0f;font-weight:700">Nuovo messaggio</h1>
       <p style="margin:0 0 16px;font-size:15px;color:#3a3a3f;line-height:1.6">
@@ -473,9 +494,13 @@ Attiva abbonamento: ${FRONTEND_URL}/billing
           <a href="${FRONTEND_URL}/messages" style="color:#fff;text-decoration:none;font-size:15px;font-weight:600">Leggi il messaggio</a>
         </td></tr>
       </table>
+      <p style="margin:32px 0 0;font-size:11px;color:#999;text-align:center;line-height:1.5">
+        Ricevi queste email perché segui ${creator} su Menia.io.
+        <br/><a href="${unsubUrl}" style="color:#999;text-decoration:underline">Annulla iscrizione ai messaggi promozionali</a>
+      </p>
     `);
-    const text = `Nuovo messaggio\n\nCiao ${firstName},\n\n${creator_name} ha pubblicato un aggiornamento per i suoi studenti.\n\nPuoi leggerlo direttamente nella piattaforma e vedere se riguarda i contenuti che stai seguendo.\n\nLeggi il messaggio: ${FRONTEND_URL}/messages\n\n— Menia.io`;
-    const r = await sendMail({ to: email, subject, html, text });
+    const text = `Nuovo messaggio\n\nCiao ${firstName},\n\n${creator_name} ha pubblicato un aggiornamento per i suoi studenti.\n\nLeggi il messaggio: ${FRONTEND_URL}/messages\n\nAnnulla iscrizione: ${unsubUrl}\n\n— Menia.io`;
+    const r = await sendMail({ to: email, subject, html, text, headers: { "List-Unsubscribe": `<${unsubUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } });
     if (r.ok) console.log(`[emails] broadcast received sent to ${email} via ${r.provider}`);
     return r;
   },
@@ -546,6 +571,54 @@ Attiva abbonamento: ${FRONTEND_URL}/billing
   // nessun caller residuo.
   async sendTokenPurchase() { /* deprecated — token economy removed */ return { ok: false, error: "deprecated" }; },
   async sendPayoutUpdate()   { /* deprecated — payout flow removed   */ return { ok: false, error: "deprecated" }; },
+
+  // Inviato all'utente quando completa il 100% delle lezioni di un corso.
+  // Allegato: PDF dell'attestato di partecipazione.
+  async sendCertificate({ email, name, course_title, certificate_number, pdfBuffer }) {
+    const firstName = escapeHtml((name || "").split(" ")[0] || "Ciao");
+    const courseTitle = escapeHtml(course_title || "il tuo corso");
+    const certNum = escapeHtml(certificate_number || "—");
+    const subject = `Attestato di partecipazione: ${course_title}`;
+
+    const html = layout(`
+      <h1 style="margin:0 0 16px;font-size:24px;color:#0a0a0f;font-weight:700">Hai completato il corso 🎓</h1>
+      <p style="margin:0 0 16px;font-size:15px;color:#3a3a3f;line-height:1.6">
+        Ciao <strong style="color:#0a0a0f">${firstName}</strong>,
+      </p>
+      <p style="margin:0 0 16px;font-size:15px;color:#3a3a3f;line-height:1.6">
+        complimenti per aver completato <strong style="color:#0a0a0f">${courseTitle}</strong>.
+        In allegato trovi il tuo attestato di partecipazione.
+      </p>
+      <p style="margin:0 0 16px;font-size:15px;color:#3a3a3f;line-height:1.6">
+        <strong>ID certificato:</strong> <code style="background:#f5f5f7;padding:2px 6px;border-radius:4px;font-size:13px">${certNum}</code>
+      </p>
+      <p style="margin:0 0 16px;font-size:14px;color:#3a3a3f;line-height:1.6">
+        Puoi aggiungerlo a <strong>LinkedIn</strong> nella sezione "Licenze e certificazioni":
+      </p>
+      <ul style="margin:0 0 24px;padding-left:20px;font-size:14px;color:#3a3a3f;line-height:1.7">
+        <li>Issuing organization: <strong>Menia.io</strong></li>
+        <li>Credential ID: <strong>${certNum}</strong></li>
+        <li>Issue date: oggi</li>
+      </ul>
+      <p style="margin:0 0 0;font-size:12px;color:#999;line-height:1.5">
+        L'attestato è una conferma di partecipazione rilasciata dalla piattaforma Menia.io.
+        Non costituisce titolo formativo riconosciuto né qualifica professionale.
+      </p>
+    `);
+
+    const text = `Hai completato ${course_title}\n\nCiao ${firstName},\n\nin allegato il tuo attestato di partecipazione.\nID certificato: ${certificate_number}\n\n— Menia.io`;
+
+    const r = await sendMail({
+      to: email, subject, html, text,
+      attachments: pdfBuffer ? [{
+        filename: `attestato-menia-${certificate_number}.pdf`,
+        content: pdfBuffer,
+        contentType: "application/pdf",
+      }] : undefined,
+    });
+    if (r.ok) console.log(`[emails] certificate ${certificate_number} sent to ${email} via ${r.provider}`);
+    return r;
+  },
 };
 
 module.exports = emails;

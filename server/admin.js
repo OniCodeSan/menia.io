@@ -1075,5 +1075,343 @@ module.exports = function createAdminRouter({ supabase, requireAdminJWT, emails 
     return res.status(500).json(r);
   });
 
+  // =========================================================================
+  // ODINO DASHBOARD — business + performance + system metrics
+  // Endpoint dedicati al portale admin (odino.menia.io).
+  // =========================================================================
+
+  router.get("/dashboard/business", async (req, res) => {
+    try {
+      // Post-T1 refactor: payment_orders archived → revenue calcolato come MRR
+      // (Monthly Recurring Revenue) sommando platform_subscriptions attive +
+      // creator_plan_subscriptions attive (price_monthly del plan).
+      const [
+        usersAll, usersFan, usersCreator,
+        coursesAll, coursesPublished,
+        lessonsAll,
+        platformSubsAll,
+        creatorPlanSubsAll,
+        plansAll,
+      ] = await Promise.all([
+        supabase.from("profiles").select("id", { count: "exact", head: true }),
+        supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "fan"),
+        supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "creator"),
+        supabase.from("courses").select("id", { count: "exact", head: true }),
+        supabase.from("courses").select("id", { count: "exact", head: true }).eq("is_published", true),
+        supabase.from("course_lessons").select("id", { count: "exact", head: true }),
+        supabase.from("platform_subscriptions").select("user_id, status, amount_cents, created_at"),
+        supabase.from("creator_plan_subscriptions").select("creator_id, plan_id, status, started_at"),
+        supabase.from("creator_plans").select("id, name, price_monthly"),
+      ]);
+
+      const planById = new Map((plansAll.data || []).map((p) => [p.id, p]));
+
+      // ---- MRR fan (platform subscriptions attive) ----
+      let mrrFans = 0;
+      let activePlatformSubs = 0;
+      for (const s of platformSubsAll.data || []) {
+        if (s.status === "active" || s.status === "past_due") {
+          mrrFans += (Number(s.amount_cents) || 99) / 100;
+          activePlatformSubs += 1;
+        }
+      }
+
+      // ---- MRR creator (creator plan subscriptions attive) ----
+      let mrrCreators = 0;
+      const packagesByPlan = {};
+      for (const s of creatorPlanSubsAll.data || []) {
+        if (s.status !== "active") continue;
+        const plan = planById.get(s.plan_id);
+        const price = Number(plan?.price_monthly || 0);
+        mrrCreators += price;
+        const code = plan?.id || s.plan_id;
+        if (!packagesByPlan[code]) {
+          packagesByPlan[code] = {
+            code, name: plan?.name || code,
+            count: 0, revenue_eur: 0, subscribers: new Set(),
+          };
+        }
+        packagesByPlan[code].count += 1;
+        packagesByPlan[code].revenue_eur += price;
+        packagesByPlan[code].subscribers.add(s.creator_id);
+      }
+
+      const subs = platformSubsAll.data || [];
+      const subStats = {
+        trial: 0, active: 0, past_due: 0, canceled: 0, expired: 0,
+        canceled_by_role: { fan: 0, creator: 0, other: 0 },
+        expired_by_role: { fan: 0, creator: 0, other: 0 },
+      };
+      const subUserIds = subs.map((s) => s.user_id);
+      let subRoleMap = {};
+      if (subUserIds.length) {
+        const { data: subProfs } = await supabase
+          .from("profiles").select("id, role").in("id", subUserIds);
+        for (const p of subProfs || []) subRoleMap[p.id] = p.role;
+      }
+      for (const s of subs) {
+        if (subStats[s.status] !== undefined) subStats[s.status] += 1;
+        const r = subRoleMap[s.user_id] || "other";
+        if (s.status === "canceled") subStats.canceled_by_role[r === "fan" || r === "creator" ? r : "other"] += 1;
+        if (s.status === "expired") subStats.expired_by_role[r === "fan" || r === "creator" ? r : "other"] += 1;
+      }
+
+      const totalMrr = mrrFans + mrrCreators;
+
+      res.json({
+        users: {
+          total: usersAll.count ?? 0,
+          fans: usersFan.count ?? 0,
+          creators: usersCreator.count ?? 0,
+        },
+        courses: {
+          total: coursesAll.count ?? 0,
+          published: coursesPublished.count ?? 0,
+          lessons_total: lessonsAll.count ?? 0,
+          duration_note: "Hours not tracked at lesson level — using lesson count as proxy",
+        },
+        revenue: {
+          // Monthly Recurring Revenue (MRR) calcolato dalle subscription attive
+          total_eur: Math.round(totalMrr * 100) / 100,
+          from_fans_eur: Math.round(mrrFans * 100) / 100,
+          from_creators_eur: Math.round(mrrCreators * 100) / 100,
+          from_others_eur: 0,
+          mrr_note: "MRR su subscription attive (post-T1: payment_orders archiviato)",
+          active_platform_subs: activePlatformSubs,
+          active_creator_plans: Object.values(packagesByPlan).reduce((s, p) => s + p.count, 0),
+        },
+        packages: Object.values(packagesByPlan).map((p) => ({
+          code: p.code,
+          name: p.name,
+          count: p.count,
+          revenue_eur: Math.round(p.revenue_eur * 100) / 100,
+          unique_subscribers: p.subscribers.size,
+        })),
+        platform_subscriptions: subStats,
+      });
+    } catch (err) {
+      console.error("[admin/dashboard/business]", err.message);
+      res.status(500).json({ error: "Errore caricamento business" });
+    }
+  });
+
+  router.get("/dashboard/courses-performance", async (req, res) => {
+    try {
+      const { data: courses, error: cErr } = await supabase
+        .from("courses").select("id, title, creator_id, price, is_published, created_at");
+      if (cErr) throw cErr;
+      const courseIds = (courses || []).map((c) => c.id);
+      if (courseIds.length === 0) {
+        return res.json({ top_acquired: [], top_viewed: [], purchased_not_opened: [], zero_performance: [] });
+      }
+
+      const [accessRes, completionsRes, lessonsRes] = await Promise.all([
+        supabase.from("course_access").select("user_id, course_id, granted_at").in("course_id", courseIds),
+        supabase.from("lesson_completions").select("user_id, course_id, completed_at").in("course_id", courseIds),
+        supabase.from("course_lessons").select("id, course_id").in("course_id", courseIds),
+      ]);
+
+      const accessByCourse = {};
+      const usersWithAccessByCourse = {};
+      for (const a of accessRes.data || []) {
+        accessByCourse[a.course_id] = (accessByCourse[a.course_id] || 0) + 1;
+        if (!usersWithAccessByCourse[a.course_id]) usersWithAccessByCourse[a.course_id] = new Set();
+        usersWithAccessByCourse[a.course_id].add(a.user_id);
+      }
+      const viewsByCourse = {};
+      const viewersByCourse = {};
+      for (const c of completionsRes.data || []) {
+        viewsByCourse[c.course_id] = (viewsByCourse[c.course_id] || 0) + 1;
+        if (!viewersByCourse[c.course_id]) viewersByCourse[c.course_id] = new Set();
+        viewersByCourse[c.course_id].add(c.user_id);
+      }
+      const lessonCountByCourse = {};
+      for (const l of lessonsRes.data || []) {
+        lessonCountByCourse[l.course_id] = (lessonCountByCourse[l.course_id] || 0) + 1;
+      }
+
+      const enriched = (courses || []).map((c) => {
+        const accessCount = accessByCourse[c.id] || 0;
+        const viewCount = viewsByCourse[c.id] || 0;
+        const usersAccess = usersWithAccessByCourse[c.id] || new Set();
+        const usersView = viewersByCourse[c.id] || new Set();
+        let acquiredNotOpened = 0;
+        for (const uid of usersAccess) if (!usersView.has(uid)) acquiredNotOpened += 1;
+        return {
+          id: c.id, title: c.title, creator_id: c.creator_id, price: Number(c.price || 0),
+          is_published: c.is_published, created_at: c.created_at,
+          lesson_count: lessonCountByCourse[c.id] || 0,
+          acquisitions: accessCount,
+          unique_buyers: usersAccess.size,
+          views: viewCount,
+          unique_viewers: usersView.size,
+          acquired_not_opened: acquiredNotOpened,
+        };
+      });
+
+      const topAcquired = [...enriched].sort((a, b) => b.acquisitions - a.acquisitions).slice(0, 10);
+      const topViewed = [...enriched].sort((a, b) => b.views - a.views).slice(0, 10);
+      const purchasedNotOpened = enriched
+        .filter((c) => c.acquired_not_opened > 0)
+        .sort((a, b) => b.acquired_not_opened - a.acquired_not_opened)
+        .slice(0, 20);
+      const zeroPerf = enriched
+        .filter((c) => c.is_published && c.acquisitions === 0 && c.views === 0)
+        .slice(0, 50);
+
+      res.json({
+        top_acquired: topAcquired,
+        top_viewed: topViewed,
+        purchased_not_opened: purchasedNotOpened,
+        zero_performance: zeroPerf,
+        total_courses: enriched.length,
+      });
+    } catch (err) {
+      console.error("[admin/dashboard/courses-performance]", err.message);
+      res.status(500).json({ error: "Errore performance corsi" });
+    }
+  });
+
+  router.post("/notifications/segment", async (req, res) => {
+    try {
+      const { target_role, target_user_ids, title, body, type = "info" } = req.body || {};
+      if (!title || String(title).trim().length < 2) {
+        return res.status(400).json({ error: "Titolo obbligatorio" });
+      }
+      const cleanTitle = String(title).trim().slice(0, 200);
+      const cleanBody = String(body || "").trim().slice(0, 5000) || null;
+
+      let recipientIds = [];
+      if (Array.isArray(target_user_ids) && target_user_ids.length > 0) {
+        recipientIds = target_user_ids.filter((id) => isUUID(id));
+      } else if (target_role === "fan" || target_role === "creator" || target_role === "all") {
+        let q = supabase.from("profiles").select("id");
+        if (target_role !== "all") q = q.eq("role", target_role);
+        const { data: profs, error } = await q;
+        if (error) throw error;
+        recipientIds = (profs || []).map((p) => p.id);
+      } else {
+        return res.status(400).json({ error: "Specifica target_role (fan|creator|all) oppure target_user_ids[]" });
+      }
+
+      if (recipientIds.length === 0) {
+        return res.status(400).json({ error: "Nessun destinatario trovato" });
+      }
+
+      const PAGE = 500;
+      let inserted = 0;
+      for (let i = 0; i < recipientIds.length; i += PAGE) {
+        const slice = recipientIds.slice(i, i + PAGE);
+        const rows = slice.map((uid) => ({
+          user_id: uid, type, title: cleanTitle, body: cleanBody,
+          ref_id: null, read: false,
+        }));
+        const { error } = await supabase.from("notifications").insert(rows);
+        if (error) {
+          console.error("[admin/notifications/segment:insert]", error.message);
+          continue;
+        }
+        inserted += rows.length;
+      }
+
+      await audit(req.admin.id, "notification_segment", "notification", null, {
+        target_role: target_role || "ids", recipients: recipientIds.length, inserted,
+      }, clientIp(req));
+
+      res.json({ ok: true, recipients: recipientIds.length, inserted });
+    } catch (err) {
+      console.error("[admin/notifications/segment]", err.message);
+      res.status(500).json({ error: "Errore invio segmentato" });
+    }
+  });
+
+  router.get("/system/resources", async (req, res) => {
+    try {
+      const os = require("os");
+      const { execSync } = require("child_process");
+
+      const cpus = os.cpus();
+      const load = os.loadavg();
+      const totalMem = os.totalmem();
+      const freeMem = os.freemem();
+      const usedMem = totalMem - freeMem;
+
+      let disk = null;
+      try {
+        const out = execSync("df -kP / | tail -1", { timeout: 1500 }).toString().trim();
+        const parts = out.split(/\s+/);
+        if (parts.length >= 5) {
+          disk = {
+            total_kb: Number(parts[1]),
+            used_kb: Number(parts[2]),
+            available_kb: Number(parts[3]),
+            use_pct: Number(String(parts[4]).replace("%", "")),
+          };
+        }
+      } catch (e) {
+        disk = { error: e.message };
+      }
+
+      const proc = {
+        rss_bytes: process.memoryUsage().rss,
+        heap_used_bytes: process.memoryUsage().heapUsed,
+        heap_total_bytes: process.memoryUsage().heapTotal,
+        uptime_sec: Math.round(process.uptime()),
+        node_version: process.version,
+      };
+
+      const alerts = [];
+      const memPct = (usedMem / totalMem) * 100;
+      if (memPct > 90) alerts.push({ level: "critical", area: "memory", message: `RAM ${memPct.toFixed(1)}%` });
+      else if (memPct > 80) alerts.push({ level: "warn", area: "memory", message: `RAM ${memPct.toFixed(1)}%` });
+
+      if (disk?.use_pct >= 90) alerts.push({ level: "critical", area: "disk", message: `Disk ${disk.use_pct}%` });
+      else if (disk?.use_pct >= 80) alerts.push({ level: "warn", area: "disk", message: `Disk ${disk.use_pct}%` });
+
+      const loadPerCore = load[0] / Math.max(cpus.length, 1);
+      if (loadPerCore > 2) alerts.push({ level: "critical", area: "cpu", message: `Load/core ${loadPerCore.toFixed(2)}` });
+      else if (loadPerCore > 1) alerts.push({ level: "warn", area: "cpu", message: `Load/core ${loadPerCore.toFixed(2)}` });
+
+      res.json({
+        cpu: {
+          cores: cpus.length,
+          model: cpus[0]?.model || "unknown",
+          load_1m: load[0], load_5m: load[1], load_15m: load[2],
+          load_per_core_1m: loadPerCore,
+        },
+        memory: {
+          total_bytes: totalMem,
+          used_bytes: usedMem,
+          free_bytes: freeMem,
+          use_pct: memPct,
+        },
+        disk,
+        process: proc,
+        os: { platform: os.platform(), arch: os.arch(), uptime_sec: Math.round(os.uptime()), hostname: os.hostname() },
+        alerts,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.error("[admin/system/resources]", err.message);
+      res.status(500).json({ error: "Errore lettura risorse sistema" });
+    }
+  });
+
+  router.get("/system/load", async (req, res) => {
+    try {
+      const stats = req.app.get("requestStats") || null;
+      if (!stats) {
+        return res.json({
+          enabled: false,
+          note: "request stats middleware not wired (see server/index.js)",
+        });
+      }
+      res.json({ enabled: true, ...stats.snapshot() });
+    } catch (err) {
+      console.error("[admin/system/load]", err.message);
+      res.status(500).json({ error: "Errore metriche carico" });
+    }
+  });
+
   return router;
 };

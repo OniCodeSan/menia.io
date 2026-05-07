@@ -31,8 +31,9 @@ function sanitizeLanding(raw) {
   return out;
 }
 
-module.exports = function createCoursesRouter({ supabase, requireUserJWT }) {
+module.exports = function createCoursesRouter({ supabase, requireUserJWT, emails }) {
   const router = express.Router();
+  const certificates = require("./certificates");
 
   // ---------------------------------------------------------------------------
   // GET /api/courses?sort=ranking|recent — list published courses
@@ -306,7 +307,7 @@ module.exports = function createCoursesRouter({ supabase, requireUserJWT }) {
     // Refresh aggregated KPI so the dashboard counters reflect the new state
     // (total_courses counts published rows; recompute keeps the agg in sync
     // even on draft creates so the next publish toggle is consistent).
-    try { await supabase.rpc("compute_creator_kpi", { p_creator_id: user.id }); } catch {}
+    try { await supabase.rpc("compute_creator_kpi", { p_creator_id: user.id }); } catch (e) { global._silentReport && global._silentReport("kpi-compute")(e); }
     return res.status(201).json({ course: data });
   });
 
@@ -368,7 +369,7 @@ module.exports = function createCoursesRouter({ supabase, requireUserJWT }) {
     // Recompute creator KPIs whenever publish state changes (it's the only
     // toggle that moves total_courses). Cheap RPC, fire-and-forget.
     if (Object.prototype.hasOwnProperty.call(patch, "is_published")) {
-      try { await supabase.rpc("compute_creator_kpi", { p_creator_id: user.id }); } catch {}
+      try { await supabase.rpc("compute_creator_kpi", { p_creator_id: user.id }); } catch (e) { global._silentReport && global._silentReport("kpi-compute")(e); }
     }
     return res.json({ course: data });
   });
@@ -463,6 +464,61 @@ module.exports = function createCoursesRouter({ supabase, requireUserJWT }) {
       version: data?.version || 0,
       created_at: data?.created_at || null,
     });
+  });
+
+  // ---------------------------------------------------------------------------
+  // POST /api/courses/:id/check-completion
+  // Chiamato dal client dopo ogni markComplete. Se 100% lezioni completate
+  // genera attestato (idempotente). Risponde sempre 200 con { issued, ... }.
+  // ---------------------------------------------------------------------------
+  router.post("/:id/check-completion", async (req, res) => {
+    const user = await requireUserJWT(req);
+    if (!user) return res.status(401).json({ error: "Autenticazione richiesta" });
+
+    const { id: courseId } = req.params;
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(courseId)) {
+      return res.status(400).json({ error: "courseId non valido" });
+    }
+
+    try {
+      const result = await certificates.issueIfComplete({
+        userId: user.id,
+        courseId,
+        supabase,
+        emails,
+      });
+      res.json(result);
+    } catch (err) {
+      console.error("[courses/check-completion]", err.message);
+      res.status(500).json({ error: "Errore verifica completamento" });
+    }
+  });
+
+  // ---------------------------------------------------------------------------
+  // GET /api/courses/:id/certificate
+  // Ritorna metadati del certificato dell'utente (se esiste) + signed URL al PDF
+  // ---------------------------------------------------------------------------
+  router.get("/:id/certificate", async (req, res) => {
+    const user = await requireUserJWT(req);
+    if (!user) return res.status(401).json({ error: "Autenticazione richiesta" });
+    const { id: courseId } = req.params;
+
+    const { data: cert } = await supabase
+      .from("certificates")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("course_id", courseId)
+      .maybeSingle();
+    if (!cert) return res.status(404).json({ error: "Certificato non disponibile" });
+
+    let downloadUrl = null;
+    if (cert.pdf_path) {
+      const { data: signed } = await supabase.storage
+        .from("certificates")
+        .createSignedUrl(cert.pdf_path, 60 * 60); // 1 ora
+      downloadUrl = signed?.signedUrl || null;
+    }
+    res.json({ certificate: cert, download_url: downloadUrl });
   });
 
   return router;

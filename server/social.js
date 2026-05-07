@@ -261,6 +261,11 @@ async function fanOutBroadcast(supabase, broadcast, senderId) {
         // (Per scale > 1k follower, sostituire con bulk/queue.)
         await Promise.all(activeFans.map(async (fanId) => {
           try {
+            // Rispetta email preferences (bounced/complained/unsubscribed marketing)
+            const { data: canSend } = await supabase
+              .rpc("email_can_send", { p_user_id: fanId, p_kind: "marketing" });
+            if (canSend === false) return;
+
             const { data: au } = await supabase.auth.admin.getUserById(fanId);
             const email = au?.user?.email;
             if (!email) return;
@@ -268,9 +273,10 @@ async function fanOutBroadcast(supabase, broadcast, senderId) {
               email,
               name: profMap.get(fanId) || "",
               creator_name: creatorName,
+              user_id: fanId,
             });
             totalMailed++;
-          } catch {}
+          } catch (e) { global._silentReport && global._silentReport("broadcast-email")(e); }
         }));
       } catch (e) {
         console.warn("[fanout:email]", e.message);

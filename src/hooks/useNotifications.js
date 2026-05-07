@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { notificationsApi } from "@/lib/api";
 import { useAuth } from "@/lib/AuthContext";
+import { silentReport } from "@/lib/sentry";
 
 const POLLING_INTERVAL_MS = 60_000;
 const SAFETY_SYNC_MS = 120_000;
@@ -96,7 +97,9 @@ export default function useNotifications() {
       try {
         const r = await notificationsApi.unreadCount();
         setCount(clampCount(r.count || 0));
-      } catch {}
+      } catch (e) {
+        silentReport("notifications-sync")(e);
+      }
     }, SAFETY_SYNC_MS);
 
     const onFocus = () => refreshRef.current?.();

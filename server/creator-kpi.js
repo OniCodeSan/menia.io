@@ -367,7 +367,7 @@ module.exports = function createKpiRouter({ supabase, requireUserJWT, requireAdm
       return res.status(500).json({ error: "Errore attivazione piano" });
     }
 
-    try { await supabase.rpc("compute_creator_kpi", { p_creator_id: user.id }); } catch {}
+    try { await supabase.rpc("compute_creator_kpi", { p_creator_id: user.id }); } catch (e) { global._silentReport && global._silentReport("kpi-compute")(e); }
 
     console.log(`[test] creator self-activated plan: creator=${user.id} plan=${plan_id}`);
     return res.json({

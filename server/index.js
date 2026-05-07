@@ -12,6 +12,19 @@ if (process.env.SENTRY_DSN) {
   });
 }
 
+// Helper per registrare errori "silenziosi": catch che soft-failano senza
+// re-throw. Capture-a su Sentry con tag silent=true + label per filtraggio.
+// Es: try { await foo() } catch (e) { silentReport("kpi-compute")(e); }
+const silentReport = (label) => (err) => {
+  try {
+    if (process.env.SENTRY_DSN && err) {
+      Sentry.captureException(err, { tags: { silent: true, label } });
+    }
+  } catch {}
+};
+// Esposto globally per riusarlo dai router senza duplicare l'import
+global._silentReport = silentReport;
+
 const express = require("express");
 const cors = require("cors");
 const rateLimit = require("express-rate-limit");
@@ -58,9 +71,39 @@ const helmet = require("helmet");
 const app = express();
 
 app.use(helmet({
-  contentSecurityPolicy: false,
+  contentSecurityPolicy: false,        // gestita sotto in report-only mode
   crossOriginEmbedderPolicy: false,
 }));
+
+// ---------------------------------------------------------------------------
+// CSP — Report-Only mode (Phase 1).
+// Non blocca, ma logga le violation. Dopo qualche giorno di traffico reale
+// senza report critici, si può promuovere a enforcement (header normale).
+// La policy specchia quella nei <meta> dei bundle frontend per consistenza.
+// ---------------------------------------------------------------------------
+const CSP_DIRECTIVES = [
+  "default-src 'self'",
+  "script-src 'self' https://live.menia.io",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com data:",
+  "img-src 'self' data: blob: https:",
+  "media-src 'self' blob: https:",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.ingest.sentry.io https://*.sentry.io https://live.menia.io wss://live.menia.io",
+  "worker-src 'self' blob:",
+  "frame-src 'self' https://*.stripe.com https://gumroad.com https://*.gumroad.com https://*.lemonsqueezy.com https://live.menia.io",
+  "form-action 'self' https://*.stripe.com https://gumroad.com https://*.gumroad.com https://*.lemonsqueezy.com",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "report-uri /api/csp-report",
+  "upgrade-insecure-requests",
+].join("; ");
+
+app.use((req, res, next) => {
+  // Report-only su tutte le risposte HTML/serve-static. Non interfere su /api/*
+  // perché non hanno script eseguibili, ma settarlo ovunque non costa nulla.
+  res.setHeader("Content-Security-Policy-Report-Only", CSP_DIRECTIVES);
+  next();
+});
 const ADMIN_URL = process.env.ADMIN_URL || "https://admin.menia.io";
 app.use(cors({
   origin: [FRONTEND_URL, ADMIN_URL],
@@ -122,6 +165,59 @@ app.use("/api/billing/webhook", express.raw({ type: "application/json", limit: "
 app.use(express.json({ limit: "16kb" }));
 
 // ---------------------------------------------------------------------------
+// Request stats — window scorrevole 5 min per /admin/system/load.
+// Memory-only; restart azzera. Costo per request: ~constant.
+// ---------------------------------------------------------------------------
+const requestStats = (() => {
+  const WINDOW_MS = 5 * 60 * 1000;
+  let buf = [];
+  let totals = { req: 0, err4xx: 0, err5xx: 0 };
+  function record(durationMs, status) {
+    const now = Date.now();
+    buf.push({ t: now, d: durationMs, s: status });
+    totals.req++;
+    if (status >= 500) totals.err5xx++;
+    else if (status >= 400) totals.err4xx++;
+    const cutoff = now - WINDOW_MS;
+    while (buf.length && buf[0].t < cutoff) buf.shift();
+  }
+  function snapshot() {
+    const now = Date.now();
+    const cutoff = now - WINDOW_MS;
+    while (buf.length && buf[0].t < cutoff) buf.shift();
+    if (buf.length === 0) {
+      return { window_sec: WINDOW_MS / 1000, requests: 0, rps: 0, p50_ms: 0, p95_ms: 0, p99_ms: 0, err_rate: 0, err4xx: 0, err5xx: 0, totals };
+    }
+    const sorted = buf.map((x) => x.d).sort((a, b) => a - b);
+    const p = (q) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * q))];
+    let e4 = 0, e5 = 0;
+    for (const x of buf) {
+      if (x.s >= 500) e5++;
+      else if (x.s >= 400) e4++;
+    }
+    return {
+      window_sec: WINDOW_MS / 1000,
+      requests: buf.length,
+      rps: buf.length / (WINDOW_MS / 1000),
+      p50_ms: p(0.5), p95_ms: p(0.95), p99_ms: p(0.99),
+      err4xx: e4, err5xx: e5,
+      err_rate: (e4 + e5) / buf.length,
+      totals,
+    };
+  }
+  return { record, snapshot };
+})();
+app.set("requestStats", requestStats);
+app.use((req, res, next) => {
+  if (!req.path.startsWith("/api/")) return next();
+  const start = Date.now();
+  res.on("finish", () => {
+    requestStats.record(Date.now() - start, res.statusCode);
+  });
+  next();
+});
+
+// ---------------------------------------------------------------------------
 // T1 REFACTOR — disable admin endpoints that touched dropped tables
 // (token_wallets, payment_orders, payout_requests, profiles.plan).
 // 410 Gone signals "permanently removed" so clients stop retrying.
@@ -132,7 +228,7 @@ const T1_DISABLED_ADMIN_PATTERNS = [
   /^\/orders(\/|$)/,
   /^\/payouts(\/|$)/,
   /^\/creators\/[a-f0-9-]+\/plan$/,
-  /^\/dashboard(\/|$)/,
+  /^\/dashboard$/,
 ];
 app.use("/api/admin", (req, res, next) => {
   if (T1_DISABLED_ADMIN_PATTERNS.some((re) => re.test(req.path))) {
@@ -157,7 +253,7 @@ app.use("/api/admin", adminRouter);
 // T1 — public/creator API surface
 // `requireUserJWT` is hoisted (function declaration), safe to reference here.
 // ---------------------------------------------------------------------------
-const coursesRouter      = require("./courses")       ({ supabase, requireUserJWT });
+const coursesRouter      = require("./courses")       ({ supabase, requireUserJWT, emails });
 const liveEventsRouter   = require("./live-events")   ({ supabase, requireUserJWT });
 const communityRouter    = require("./community")     ({ supabase, requireUserJWT });
 const creatorsRouter     = require("./creators")      ({ supabase });
@@ -648,6 +744,25 @@ async function expirePlatformSubs() {
   }
 }
 
+async function cleanupAuditLog() {
+  try {
+    // RPC installata: purge_old_audit_logs(retention_days int default 90)
+    // Forziamo 365 da Node per allineare alla policy concordata.
+    const { data, error } = await supabase.rpc("purge_old_audit_logs", { retention_days: 365 });
+    if (error) {
+      if (error.code === "42883" || /does not exist/i.test(error.message)) {
+        return { deleted: 0, skipped: "rpc-not-installed" };
+      }
+      console.warn("[CRON] purge_old_audit_logs:", error.message);
+      return { deleted: 0, error: error.message };
+    }
+    return { deleted: data ?? 0 };
+  } catch (err) {
+    console.error("[CRON] cleanupAuditLog failed:", err.message);
+    return { deleted: 0, error: err.message };
+  }
+}
+
 async function cleanupCourseDrafts() {
   try {
     const { data, error } = await supabase.rpc("cron_cleanup_course_drafts");
@@ -728,9 +843,10 @@ async function runGdprJobs() {
     const drafts = await cleanupCourseDrafts();
     const platformExpire = await expirePlatformSubs();
     const trialReminders = await sendTrialExpiringReminders();
+    const auditCleanup = await cleanupAuditLog();
     const durationMs = Date.now() - start;
 
-    const details = { deletions, retention, kpi, drafts, platformExpire, trialReminders };
+    const details = { deletions, retention, kpi, drafts, platformExpire, trialReminders, auditCleanup };
     await updateCronStatus("gdpr", "success", { durationMs, details });
 
     console.log("[CRON] Done", { ...details, duration: `${durationMs}ms` });
@@ -756,6 +872,166 @@ function startGdprCron() {
 // Health check
 // ---------------------------------------------------------------------------
 app.get("/api/health", (_, res) => res.json({ status: "ok", time: new Date().toISOString() }));
+
+// ---------------------------------------------------------------------------
+// CSP violation reports — aggregati in memoria e loggati (Sentry-friendly).
+// Il browser POSTA qui ad ogni violazione della policy report-only.
+// Throttling per non saturare i log: 1 log per (directive,blockedURI) ogni 60s.
+// ---------------------------------------------------------------------------
+const _cspSeen = new Map(); // key = `${directive}|${blockedURI}` → timestampMs
+app.post("/api/csp-report",
+  express.json({ type: ["application/csp-report", "application/json"], limit: "32kb" }),
+  (req, res) => {
+    try {
+      const body = req.body || {};
+      const r = body["csp-report"] || body;
+      const directive = String(r["violated-directive"] || r["effective-directive"] || "?");
+      const blocked = String(r["blocked-uri"] || "?");
+      const docUri = String(r["document-uri"] || "?");
+      const key = `${directive}|${blocked}`;
+      const now = Date.now();
+      const last = _cspSeen.get(key) || 0;
+      if (now - last > 60_000) {
+        _cspSeen.set(key, now);
+        console.warn(`[CSP-RO] violation directive="${directive}" blocked="${blocked}" doc="${docUri}"`);
+        // Cleanup map se troppo grande
+        if (_cspSeen.size > 1000) {
+          const cutoff = now - 600_000;
+          for (const [k, t] of _cspSeen) if (t < cutoff) _cspSeen.delete(k);
+        }
+      }
+    } catch {}
+    res.status(204).end();
+  }
+);
+
+// ---------------------------------------------------------------------------
+// Email unsubscribe (one-click via token JWT firmato).
+// Link generato lato server e incluso in tutte le email marketing.
+// Token signed con ADMIN_SECRET (scope: { uid, kind, exp }).
+// Public GET → render HTML conferma; non richiede login per UX immediato.
+// ---------------------------------------------------------------------------
+const jwt = require("jsonwebtoken");
+const UNSUB_SECRET = process.env.ADMIN_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// Helper esposto globally per usarlo nei template email.
+global._genUnsubscribeUrl = function (userId, kind = "marketing") {
+  if (!userId || !UNSUB_SECRET) return `${FRONTEND_URL}/email/unsubscribe`;
+  const token = jwt.sign(
+    { uid: userId, kind },
+    UNSUB_SECRET,
+    { expiresIn: "180d" }  // token valido 6 mesi
+  );
+  return `${FRONTEND_URL}/api/email/unsubscribe?token=${encodeURIComponent(token)}`;
+};
+
+app.get("/api/email/unsubscribe", async (req, res) => {
+  const { token } = req.query;
+  if (!token) return res.status(400).send(unsubPage("Token mancante."));
+
+  let payload;
+  try {
+    payload = jwt.verify(token, UNSUB_SECRET);
+  } catch {
+    return res.status(400).send(unsubPage("Link non valido o scaduto."));
+  }
+
+  const { uid, kind = "marketing" } = payload;
+  if (!uid) return res.status(400).send(unsubPage("Token incompleto."));
+
+  try {
+    const patch = { unsubscribed_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+    if (kind === "marketing") patch.marketing = false;
+    if (kind === "transactional") patch.transactional = false;
+
+    const { error } = await supabase
+      .from("email_preferences")
+      .upsert({ user_id: uid, ...patch }, { onConflict: "user_id" });
+    if (error) {
+      console.error("[email/unsubscribe]", error.message);
+      return res.status(500).send(unsubPage("Errore tecnico, riprova più tardi."));
+    }
+    return res.status(200).send(unsubPage("Unsubscribe confermato.", true));
+  } catch (e) {
+    console.error("[email/unsubscribe]", e.message);
+    return res.status(500).send(unsubPage("Errore tecnico, riprova più tardi."));
+  }
+});
+
+function unsubPage(msg, ok = false) {
+  const color = ok ? "#10b981" : "#ef4444";
+  return `<!doctype html><html lang="it"><head>
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Menia.io — preferenze email</title>
+    <style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f5f5f7;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0}
+    .card{background:#fff;padding:40px 48px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.08);max-width:420px;text-align:center}
+    h1{font-size:18px;color:#0a0a0f;margin:0 0 14px}p{color:#3a3a3f;font-size:14px;line-height:1.6;margin:0 0 24px}
+    .badge{display:inline-block;width:48px;height:48px;border-radius:50%;background:${color};margin-bottom:16px}
+    a{color:#7c3aed;text-decoration:none;font-weight:600;font-size:13px}</style>
+    </head><body><div class="card"><div class="badge"></div>
+    <h1>${ok ? "Preferenze aggiornate" : "Operazione non completata"}</h1>
+    <p>${msg}</p><a href="${FRONTEND_URL}">← Torna a Menia.io</a></div></body></html>`;
+}
+
+// ---------------------------------------------------------------------------
+// SMTP2GO bounce/complaint webhook.
+// SMTP2GO POSTA con tipo evento + email destinataria.
+// Configura URL in dashboard: Settings → API Keys → Webhooks → +Add webhook
+//   URL: https://menia.io/api/email/smtp2go-webhook
+//   Events: bounce, spam_complaint, unsubscribe
+// ---------------------------------------------------------------------------
+app.post("/api/email/smtp2go-webhook",
+  express.json({ limit: "64kb" }),
+  async (req, res) => {
+    try {
+      const ev = req.body || {};
+      // SMTP2GO event shape: { event: 'bounce'|'spam_complaint'|'unsubscribe', ... }
+      const eventType = String(ev.event || ev.eventtype || "unknown").toLowerCase();
+      const email = String(ev.email || ev.recipient || "").toLowerCase().trim();
+      if (!email) return res.status(400).json({ error: "missing email" });
+
+      // Resolve user_id da email via auth.users
+      const { data: authList } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1 });
+      // listUsers non supporta filter by email senza loop; uso direct DB
+      const { data: prof } = await supabase
+        .from("profiles").select("id").eq("email", email).maybeSingle();
+      let userId = prof?.id || null;
+      if (!userId) {
+        // Fallback: cerca via auth.admin.getUserBy filter (paginated, costoso)
+        // Per ora skippiamo se non in profiles.
+        console.warn("[smtp2go] event for unknown email:", email, eventType);
+        return res.status(204).end();
+      }
+
+      const nowIso = new Date().toISOString();
+      const patch = { user_id: userId, updated_at: nowIso };
+      if (eventType === "bounce" || eventType === "hard_bounce") {
+        patch.bounced = true;
+        patch.bounced_at = nowIso;
+        patch.bounce_reason = String(ev.reason || ev.description || "").slice(0, 200);
+      } else if (eventType === "spam_complaint" || eventType === "complaint") {
+        patch.complained = true;
+        patch.complained_at = nowIso;
+      } else if (eventType === "unsubscribe") {
+        patch.unsubscribed_at = nowIso;
+        patch.marketing = false;
+      } else {
+        return res.status(204).end();
+      }
+
+      const { error } = await supabase
+        .from("email_preferences")
+        .upsert(patch, { onConflict: "user_id" });
+      if (error) console.error("[smtp2go] upsert failed:", error.message);
+
+      console.log(`[smtp2go] ${eventType} → ${email} (uid=${userId})`);
+      res.status(204).end();
+    } catch (err) {
+      console.error("[smtp2go-webhook]", err.message);
+      res.status(500).json({ error: "Errore webhook" });
+    }
+  }
+);
 
 app.get("/api/checkout/health", (_, res) => {
   if (PRE_LAUNCH_MODE) {

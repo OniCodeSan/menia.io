@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<title>Certificato di Partecipazione</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Caveat:wght@500;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,500&display=swap"
+  rel="stylesheet"
+/>
+<style>
+  :root {
+    --gold-light: #e8d59a;
+    --gold:       #c9a961;
+    --gold-dark:  #9d7f3a;
+    --ivory:      #ffffff;
+    --ink:        #1a1a1f;
+    --ink-soft:   #3d3d44;
+    --muted:      #7a7a82;
+  }
+
+  @page {
+    size: A4 landscape;
+    margin: 0;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #ffffff;
+    font-family: "Inter", system-ui, sans-serif;
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .certificate {
+    width: 1123px;
+    height: 794px;
+    margin: auto;
+    background: var(--ivory);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Bordo dorato esterno spesso (gradiente) */
+  .frame-outer {
+    position: absolute;
+    inset: 30px;
+    border: 4px solid;
+    border-image: linear-gradient(135deg, var(--gold-light), var(--gold), var(--gold-dark), var(--gold)) 1;
+  }
+
+  /* Bordo dorato interno sottile */
+  .frame-inner {
+    position: absolute;
+    inset: 46px;
+    border: 1px solid var(--gold-light);
+    pointer-events: none;
+  }
+
+  /* Watermark "M" enorme in filigrana al centro */
+  .watermark {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gold-dark);
+    opacity: 0.05;
+    font-family: "Cormorant Garamond", serif;
+    font-weight: 700;
+    font-size: 540px;
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /* Contenuto principale */
+  .content {
+    position: absolute;
+    inset: 60px 90px 130px 90px;
+    text-align: center;
+    z-index: 2;
+  }
+
+  /* Logo Menia in alto, centrato */
+  .header-logo {
+    width: 56px;
+    height: 56px;
+    display: block;
+    margin: 0 auto 14px auto;
+  }
+
+  .pre-title {
+    font-family: "Inter", sans-serif;
+    font-weight: 500;
+    font-size: 11px;
+    letter-spacing: 5px;
+    color: var(--gold-dark);
+    margin: 0 0 28px 0;
+  }
+
+  .pre-title .star {
+    color: var(--gold);
+    margin: 0 8px;
+  }
+
+  .title {
+    font-family: "Cormorant Garamond", serif;
+    font-weight: 700;
+    font-size: 56px;
+    color: var(--ink);
+    margin: 0 0 18px 0;
+    letter-spacing: 0.5px;
+  }
+
+  /* Divisore con diamante */
+  .divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 0 26px 0;
+    gap: 14px;
+  }
+  .divider .line {
+    width: 110px;
+    height: 1px;
+    background: var(--gold);
+  }
+  .divider .diamond {
+    width: 10px;
+    height: 10px;
+    background: var(--gold);
+    transform: rotate(45deg);
+    position: relative;
+  }
+  .divider .diamond::after {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    background: var(--gold-light);
+  }
+
+  .text {
+    font-family: "Inter", sans-serif;
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin: 0 0 18px 0;
+  }
+
+  /* Nome studente — Cormorant Italic con sottolineatura oro */
+  .name-block {
+    margin: 0 0 26px 0;
+  }
+  .name {
+    font-family: "Cormorant Garamond", serif;
+    font-style: italic;
+    font-weight: 700;
+    font-size: 56px;
+    color: var(--ink);
+    line-height: 1;
+    margin: 0 0 8px 0;
+  }
+  .name-underline {
+    display: inline-block;
+    height: 1.5px;
+    background: var(--gold);
+    margin-top: 6px;
+    position: relative;
+  }
+  .name-underline::before,
+  .name-underline::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 6px;
+    height: 6px;
+    background: var(--gold);
+    border-radius: 50%;
+    transform: translateY(-50%);
+  }
+  .name-underline::before { left: -8px; }
+  .name-underline::after  { right: -8px; }
+
+  /* Titolo corso */
+  .course {
+    font-family: "Cormorant Garamond", serif;
+    font-style: italic;
+    font-weight: 600;
+    font-size: 28px;
+    color: var(--gold-dark);
+    margin: 0 0 10px 0;
+    line-height: 1.2;
+  }
+  .creator {
+    font-family: "Inter", sans-serif;
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0;
+  }
+
+  /* Footer area: linea oro divisoria + 3 sezioni */
+  .footer {
+    position: absolute;
+    left: 90px;
+    right: 90px;
+    bottom: 64px;
+    z-index: 2;
+  }
+  .footer .gold-line {
+    height: 1px;
+    background: var(--gold);
+    position: relative;
+    margin-bottom: 22px;
+  }
+  .footer .gold-line::before,
+  .footer .gold-line::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 5px;
+    height: 5px;
+    background: var(--gold);
+    border-radius: 50%;
+    transform: translateY(-50%);
+  }
+  .footer .gold-line::before { left: -3px; }
+  .footer .gold-line::after  { right: -3px; }
+
+  .footer-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 32px;
+  }
+
+  /* Colonna metadati (sinistra) */
+  .meta-block {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    flex: 1;
+  }
+  .meta-row { display: flex; gap: 32px; }
+  .meta-item {
+    display: flex;
+    flex-direction: column;
+  }
+  .meta-label {
+    font-family: "Inter", sans-serif;
+    font-weight: 500;
+    font-size: 9px;
+    letter-spacing: 1.6px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .meta-value {
+    font-family: "Inter", sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    color: var(--ink);
+  }
+  .meta-value.gold {
+    color: var(--gold-dark);
+    font-family: "Inter", monospace;
+    letter-spacing: 0.5px;
+  }
+
+  /* Firma (centro) */
+  .sig-block {
+    text-align: center;
+    flex: 1;
+  }
+  .signature {
+    font-family: "Caveat", cursive;
+    font-weight: 700;
+    font-size: 19px;
+    color: var(--ink);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .sig-line {
+    width: 180px;
+    height: 1px;
+    background: var(--gold);
+    margin: 6px auto 8px auto;
+  }
+  .sig-name {
+    font-family: "Inter", sans-serif;
+    font-weight: 700;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+  }
+  .sig-role {
+    font-family: "Inter", sans-serif;
+    font-size: 9px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* QR (destra) */
+  .qr-block {
+    text-align: center;
+    width: 80px;
+  }
+  .qr-block img {
+    width: 70px;
+    height: 70px;
+    display: block;
+    margin: 0 auto 4px auto;
+  }
+  .qr-block .qr-label {
+    font-family: "Inter", sans-serif;
+    font-size: 8px;
+    color: var(--muted);
+  }
+
+  /* Disclaimer in fondo */
+  .disclaimer {
+    position: absolute;
+    left: 90px;
+    right: 90px;
+    bottom: 32px;
+    text-align: center;
+    font-family: "Inter", sans-serif;
+    font-size: 8.5px;
+    color: var(--muted);
+    line-height: 1.4;
+    z-index: 2;
+  }
+</style>
+</head>
+
+<body>
+<div class="certificate">
+  <div class="watermark">M</div>
+  <div class="frame-outer"></div>
+  <div class="frame-inner"></div>
+
+  <div class="content">
+    <img class="header-logo" src="{{logoDataUrl}}" alt="Menia" />
+
+    <div class="pre-title">
+      <span class="star">✦</span>CERTIFICATO UFFICIALE<span class="star">✦</span>
+    </div>
+
+    <h1 class="title">Attestato di Partecipazione</h1>
+
+    <div class="divider">
+      <div class="line"></div>
+      <div class="diamond"></div>
+      <div class="line"></div>
+    </div>
+
+    <p class="text">Si attesta che</p>
+
+    <div class="name-block">
+      <div class="name">{{studentName}}</div>
+      <span class="name-underline" style="width: 60%; min-width: 240px;"></span>
+    </div>
+
+    <p class="text">ha partecipato e completato con impegno il percorso formativo</p>
+
+    <div class="course">{{courseTitle}}</div>
+    <div class="creator">a cura di {{creatorName}}</div>
+  </div>
+
+  <div class="footer">
+    <div class="gold-line"></div>
+
+    <div class="footer-row">
+      <div class="meta-block">
+        <div class="meta-row">
+          <div class="meta-item">
+            <div class="meta-label">DATA COMPLETAMENTO</div>
+            <div class="meta-value">{{completedDate}}</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">DATA EMISSIONE</div>
+            <div class="meta-value">{{issuedDate}}</div>
+          </div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">ID CERTIFICATO</div>
+          <div class="meta-value gold">{{certificateNumber}}</div>
+        </div>
+      </div>
+
+      <div class="sig-block">
+        <div class="signature">Mariano Cotugno</div>
+        <div class="sig-line"></div>
+        <div class="sig-name">MARIANO COTUGNO</div>
+        <div class="sig-role">CEO  ·  Menia.io</div>
+      </div>
+
+      <div class="qr-block">
+        <img src="{{qrCodeDataUrl}}" alt="QR" />
+        <div class="qr-label">Verifica online</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    Attestato di partecipazione rilasciato dalla piattaforma Menia.io.
+    Non costituisce titolo formativo riconosciuto né qualifica professionale.
+  </div>
+</div>
+</body>
+</html>

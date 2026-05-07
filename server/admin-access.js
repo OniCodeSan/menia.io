@@ -366,7 +366,7 @@ module.exports = function createAdminAccessRouter({ supabase, requireAdminJWT })
     }
 
     // Trigger KPI recompute for this creator (visibility includes plan_boost)
-    try { await supabase.rpc("compute_creator_kpi", { p_creator_id: creator_id }); } catch {}
+    try { await supabase.rpc("compute_creator_kpi", { p_creator_id: creator_id }); } catch (e) { global._silentReport && global._silentReport("kpi-compute")(e); }
 
     console.log(`[admin] creator plan granted: creator=${creator_id} plan=${plan_id} expires=${expIso} by=${req.admin.id}`);
     return res.json({ subscription: result });
@@ -389,7 +389,7 @@ module.exports = function createAdminAccessRouter({ supabase, requireAdminJWT })
       .maybeSingle();
     if (error) return res.status(500).json({ error: "Errore revoca" });
 
-    try { await supabase.rpc("compute_creator_kpi", { p_creator_id: creator_id }); } catch {}
+    try { await supabase.rpc("compute_creator_kpi", { p_creator_id: creator_id }); } catch (e) { global._silentReport && global._silentReport("kpi-compute")(e); }
 
     return res.json({ subscription: data, revoked: !!data });
   });

@@ -30,7 +30,7 @@ export default function CourseSettings({ course, onChange, savingState, onOpenWi
     const externalNum = Number(course.price) || 0;
     const currentNum = Number(priceText) || 0;
     if (externalNum !== currentNum) setPriceText(formatPrice(course.price));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [course.price]);
 
   const update = (patch) => {

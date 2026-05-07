@@ -107,6 +107,18 @@ export const adminApi = {
   revokeSubscription: (body) => request("/admin/revoke-subscription", { method: "POST", body, requireAuth: true }),
   grantCreatorPlan: (body) => request("/admin/grant-creator-plan", { method: "POST", body, requireAuth: true }),
   revokeCreatorPlan: (body) => request("/admin/revoke-creator-plan", { method: "POST", body, requireAuth: true }),
+  // Odino dashboard
+  business: () => request("/admin/dashboard/business", { requireAuth: true }),
+  coursesPerformance: () => request("/admin/dashboard/courses-performance", { requireAuth: true }),
+  systemResources: () => request("/admin/system/resources", { requireAuth: true }),
+  systemLoad: () => request("/admin/system/load", { requireAuth: true }),
+  health: () => request("/admin/health", { requireAuth: true }),
+  metricsSignups: () => request("/admin/metrics/signups", { requireAuth: true }),
+  notifySegment: (body) => request("/admin/notifications/segment", { method: "POST", body, requireAuth: true }),
+  listUsers: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/admin/users${q ? `?${q}` : ""}`, { requireAuth: true });
+  },
 };
 
 // ----------------------------- Creator KPI ----------------------------------
