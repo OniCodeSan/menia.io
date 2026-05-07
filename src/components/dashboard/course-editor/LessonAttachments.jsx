@@ -1,6 +1,5 @@
 import { useRef, useState } from "react";
 import { FileText, Upload, X, Loader2, Download, AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { uploadApi } from "@/lib/api";
 
 const MAX_BYTES = 25 * 1024 * 1024;

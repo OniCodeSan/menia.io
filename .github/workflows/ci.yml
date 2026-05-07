@@ -1,0 +1,98 @@
+# =============================================================================
+# Menia.io CI — Lint + Build + Smoke production endpoint check.
+# Triggers: push su main e PR contro main.
+# Niente E2E (richiede Supabase staging dedicato — futuro).
+# =============================================================================
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 1. Lint — eslint + typecheck. Rapido (<1 min).
+  # ---------------------------------------------------------------------------
+  lint:
+    name: Lint & typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+      - run: npm ci --no-audit --no-fund --prefer-offline
+      - run: npm run lint
+      - run: npm run typecheck
+        continue-on-error: true  # typecheck pass-through finché non tutti i file sono tipati
+
+  # ---------------------------------------------------------------------------
+  # 2. Build — verifica che bundle pubblico + admin compilino senza errori.
+  #    Salva artefatto dist/ per smoke / deploy futuri.
+  # ---------------------------------------------------------------------------
+  build:
+    name: Build (frontend + admin)
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+      - run: npm ci --no-audit --no-fund --prefer-offline
+      - name: Build frontend pubblico
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npm run build
+      - name: Build odino (admin)
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npm run build:admin
+      - name: Bundle size check (assets/ JS+CSS only, max 5 MB)
+        run: |
+          # Solo assets/ JS+CSS — escludo immagini/font statici per scoping reale.
+          SIZE=$(du -sb dist/assets | awk '{print $1}')
+          MAX=$((5 * 1024 * 1024))
+          echo "dist/assets/ size: $SIZE bytes (max $MAX)"
+          if [ "$SIZE" -gt "$MAX" ]; then
+            echo "::error::Bundle JS/CSS oltre 5MB — investigare regression chunk size"
+            exit 1
+          fi
+          echo "Total dist/: $(du -sh dist | awk '{print $1}') (immagini incluse)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-public
+          path: dist/
+          retention-days: 3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-admin
+          path: dist-admin/
+          retention-days: 3
+
+  # ---------------------------------------------------------------------------
+  # 3. Smoke — solo su push main, dopo deploy: verifica endpoint live.
+  #    Su PR skippato (no deploy ancora avvenuto).
+  # ---------------------------------------------------------------------------
+  smoke:
+    name: Smoke production
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm run smoke

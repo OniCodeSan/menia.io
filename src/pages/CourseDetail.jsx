@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { motion } from "framer-motion";
 import {
   GraduationCap, Loader2, Lock, Play, ExternalLink, CheckCircle2,
   Crown, Users, Target, X, Gift, FileText, Download, Paperclip, User,
@@ -11,8 +10,26 @@ import { coursesApi, kpiApi } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { safeLessonHtml } from "@/lib/safeHtml";
 import { useCourseProgress } from "@/hooks/useCourseProgress";
+import { silentReport } from "@/lib/sentry";
 import Paywall from "@/components/billing/Paywall";
 import SEO from "@/components/shared/SEO";
+
+async function fetchCertificate(courseId) {
+  const { data } = await supabase.auth.getSession();
+  const token = data?.session?.access_token;
+  if (!token) return null;
+  try {
+    const r = await fetch(`/api/courses/${courseId}/certificate`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (r.status === 404) return null; // no certificate yet → silent ok
+    if (!r.ok) return null;
+    return await r.json();
+  } catch (e) {
+    silentReport("certificate-fetch")(e);
+    return null;
+  }
+}
 
 export default function CourseDetail() {
   const { id } = useParams();
@@ -31,6 +48,33 @@ export default function CourseDetail() {
     courseId,
     totalLessons
   );
+  const isFullyCompleted = totalLessons > 0 && completedIds.size >= totalLessons;
+  const [certificate, setCertificate] = useState(null);
+  const [certLoading, setCertLoading] = useState(false);
+
+  // Fetch certificato quando l'utente raggiunge il 100%. Riprova ogni 4s
+  // perché il backend lo emette async dopo che il client chiama check-completion.
+  useEffect(() => {
+    if (!courseId || !isFullyCompleted) { setCertificate(null); return; }
+    let cancelled = false;
+    setCertLoading(true);
+    let attempts = 0;
+    const tryFetch = async () => {
+      if (cancelled) return;
+      const r = await fetchCertificate(courseId);
+      if (cancelled) return;
+      if (r?.certificate) {
+        setCertificate(r);
+        setCertLoading(false);
+        return;
+      }
+      attempts++;
+      if (attempts < 6) setTimeout(tryFetch, 4000);
+      else setCertLoading(false);
+    };
+    tryFetch();
+    return () => { cancelled = true; };
+  }, [courseId, isFullyCompleted]);
 
   useEffect(() => {
     setLoading(true);
@@ -282,6 +326,39 @@ export default function CourseDetail() {
             <span className="text-muted-foreground whitespace-nowrap">
               <strong className="text-foreground">{completedIds.size}</strong>/{lessons.length} completate ({progressPct}%)
             </span>
+          </div>
+        )}
+
+        {/* Banner attestato — appare al 100% completato */}
+        {has_access && isFullyCompleted && (
+          <div className="mb-4 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 border border-amber-300/50 dark:border-amber-700/40 rounded-2xl p-4 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-amber-400/20 flex items-center justify-center text-2xl shrink-0">🎓</div>
+            <div className="flex-1 min-w-0">
+              <div className="font-semibold text-foreground">
+                Hai completato il corso!
+              </div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                {certificate?.certificate
+                  ? `Attestato emesso · ID ${certificate.certificate.certificate_number}`
+                  : certLoading
+                    ? "Stiamo emettendo il tuo attestato di partecipazione…"
+                    : "L'attestato sarà disponibile a breve. Ricarica la pagina tra qualche istante."}
+              </div>
+            </div>
+            {certificate?.download_url && (
+              <a
+                href={certificate.download_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                Scarica attestato
+              </a>
+            )}
+            {!certificate && certLoading && (
+              <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+            )}
           </div>
         )}
         <div className="bg-card border border-border/30 rounded-2xl divide-y divide-border/20">

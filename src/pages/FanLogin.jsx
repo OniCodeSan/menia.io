@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Heart, Mail, Lock, ArrowRight, Eye, EyeOff, User, AlertCircle, Calendar } from "lucide-react";
+import { Mail, Lock, ArrowRight, Eye, EyeOff, User, AlertCircle, Calendar } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

@@ -1,12 +1,30 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/AuthContext";
+import { silentReport } from "@/lib/sentry";
+
+// Trigger backend certificate check (best-effort, fire-and-forget).
+async function triggerCertificateCheck(courseId) {
+  try {
+    const { data } = await supabase.auth.getSession();
+    const token = data?.session?.access_token;
+    if (!token) return;
+    await fetch(`/api/courses/${courseId}/check-completion`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch (e) {
+    silentReport("certificate-trigger")(e);
+  }
+}
 
 // Progress tracker per un singolo corso.
 // Ritorna:
 //   { completedIds: Set<lesson_id>, percent, markComplete, unmarkComplete, loading }
 //
 // markComplete è idempotent (UNIQUE su user_id+lesson_id evita doppi conteggi).
+// Quando il completamento raggiunge il 100% delle lezioni, fa fire-and-forget
+// a /api/courses/:id/check-completion che emette l'attestato (se non già emesso).
 export function useCourseProgress(courseId, totalLessons) {
   const { user } = useAuth();
   const [completedIds, setCompletedIds] = useState(() => new Set());
@@ -31,10 +49,12 @@ export function useCourseProgress(courseId, totalLessons) {
   const markComplete = useCallback(async (lessonId) => {
     if (!user?.id || !courseId || !lessonId) return;
     // Optimistic
+    let nextSize = 0;
     setCompletedIds((prev) => {
-      if (prev.has(lessonId)) return prev;
+      if (prev.has(lessonId)) { nextSize = prev.size; return prev; }
       const next = new Set(prev);
       next.add(lessonId);
+      nextSize = next.size;
       return next;
     });
     const { error } = await supabase
@@ -48,8 +68,13 @@ export function useCourseProgress(courseId, totalLessons) {
         next.delete(lessonId);
         return next;
       });
+      return;
     }
-  }, [user?.id, courseId]);
+    // 100% completato → trigger emissione attestato (fire-and-forget).
+    if (totalLessons > 0 && nextSize >= totalLessons) {
+      triggerCertificateCheck(courseId);
+    }
+  }, [user?.id, courseId, totalLessons]);
 
   const unmarkComplete = useCallback(async (lessonId) => {
     if (!user?.id || !courseId || !lessonId) return;
@@ -117,7 +142,9 @@ export function useStudentProgress(courseIds) {
     }).catch(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
-  }, [user?.id, JSON.stringify(courseIds)]); // eslint-disable-line react-hooks/exhaustive-deps
+    // courseIds passed as JSON.stringify to dedup deps — eslint plugin
+    // react-hooks non è caricato nel config attuale, dep array gestito a mano.
+  }, [user?.id, JSON.stringify(courseIds)]);
 
   return { progress, loading };
 }

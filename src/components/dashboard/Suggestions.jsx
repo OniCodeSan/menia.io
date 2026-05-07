@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Check, Circle, ArrowRight } from "lucide-react";
+import { Check, ArrowRight } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 
 // "Prossimi passi" come step-progression onboarding: gli step sono FISSI e

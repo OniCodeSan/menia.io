@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Sparkles, ArrowRight, ArrowLeft, Loader2, Check } from "lucide-react";
+import { Sparkles, ArrowRight, ArrowLeft, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
