@@ -20,7 +20,33 @@
          base-uri  'self'   → prevents <base> tag hijacking
          upgrade-insecure-requests → auto-upgrades any leftover http:// link
     -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://live.menia.io; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.ingest.sentry.io https://*.sentry.io https://live.menia.io wss://live.menia.io; worker-src 'self' blob:; frame-src 'self' https://*.stripe.com https://gumroad.com https://*.gumroad.com https://*.lemonsqueezy.com https://live.menia.io; form-action 'self' https://*.stripe.com https://gumroad.com https://*.gumroad.com https://*.lemonsqueezy.com; base-uri 'self'; object-src 'none'; upgrade-insecure-requests" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://live.menia.io https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https: https://www.google-analytics.com https://www.googletagmanager.com; media-src 'self' blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.ingest.sentry.io https://*.sentry.io https://live.menia.io wss://live.menia.io https://www.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; worker-src 'self' blob:; frame-src 'self' https://*.stripe.com https://gumroad.com https://*.gumroad.com https://*.lemonsqueezy.com https://live.menia.io; form-action 'self' https://*.stripe.com https://gumroad.com https://*.gumroad.com https://*.lemonsqueezy.com; base-uri 'self'; object-src 'none'; upgrade-insecure-requests" />
+
+    <!-- Google Analytics 4 (G-3289V4EBDR) — GDPR-compliant via Consent Mode v2.
+         Default: tutti i consensi DENIED. Il CookieBanner chiama
+         gtag('consent','update', ...) quando l'utente accetta gli analytics. -->
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      window.gtag = gtag;
+      gtag('consent', 'default', {
+        ad_storage: 'denied',
+        ad_user_data: 'denied',
+        ad_personalization: 'denied',
+        analytics_storage: 'denied',
+        wait_for_update: 500
+      });
+      // Se l'utente aveva già accettato in una visita precedente, aggiorna subito
+      try {
+        var c = JSON.parse(localStorage.getItem('menia:cookie_consent') || 'null');
+        if (c && c.analytics === true) {
+          gtag('consent', 'update', { analytics_storage: 'granted' });
+        }
+      } catch (e) {}
+      gtag('js', new Date());
+      gtag('config', 'G-3289V4EBDR', { anonymize_ip: true });
+    </script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-3289V4EBDR"></script>
   </head>
   <body>
     <div id="root"></div>

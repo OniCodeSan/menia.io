@@ -34,6 +34,13 @@ function getConsent() {
 
 function setConsent(value, action = "accept") {
   localStorage.setItem(CONSENT_KEY, JSON.stringify({ ...value, ts: Date.now() }));
+  // Notifica gtag (Google Analytics Consent Mode v2). Il tag è in index.html
+  // con default 'denied'; qui aggiorna in base alla scelta dell'utente.
+  if (typeof window !== "undefined" && typeof window.gtag === "function") {
+    window.gtag("consent", "update", {
+      analytics_storage: value.analytics ? "granted" : "denied",
+    });
+  }
   fetch("/api/gdpr/consent", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

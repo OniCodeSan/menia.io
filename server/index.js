@@ -83,12 +83,12 @@ app.use(helmet({
 // ---------------------------------------------------------------------------
 const CSP_DIRECTIVES = [
   "default-src 'self'",
-  "script-src 'self' https://live.menia.io",
+  "script-src 'self' 'unsafe-inline' https://live.menia.io https://www.googletagmanager.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com data:",
-  "img-src 'self' data: blob: https:",
+  "img-src 'self' data: blob: https: https://www.google-analytics.com https://www.googletagmanager.com",
   "media-src 'self' blob: https:",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.ingest.sentry.io https://*.sentry.io https://live.menia.io wss://live.menia.io",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.ingest.sentry.io https://*.sentry.io https://live.menia.io wss://live.menia.io https://www.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com",
   "worker-src 'self' blob:",
   "frame-src 'self' https://*.stripe.com https://gumroad.com https://*.gumroad.com https://*.lemonsqueezy.com https://live.menia.io",
   "form-action 'self' https://*.stripe.com https://gumroad.com https://*.gumroad.com https://*.lemonsqueezy.com",
