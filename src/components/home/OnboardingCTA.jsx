@@ -132,7 +132,6 @@ function PromoBanner({ promo }) {
         {promo.slots_remaining != null && promo.slots_remaining > 0 && (
           <> — restano <strong>{promo.slots_remaining}</strong> post{promo.slots_remaining === 1 ? "o" : "i"} a questo prezzo</>
         )}.
-        <span className="block text-[10px] mt-0.5 opacity-80">Non cumulabile · 1 sola attivazione per email</span>
       </div>
     </div>
   );
