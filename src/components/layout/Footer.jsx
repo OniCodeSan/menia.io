@@ -81,8 +81,9 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-border/20 pt-6 text-center">
+        <div className="border-t border-border/20 pt-6 text-center space-y-1">
           <p className="text-xs text-muted-foreground">{f.copyright}</p>
+          <p className="text-xs text-muted-foreground">P.IVA IT10246321219</p>
         </div>
       </div>
     </footer>
