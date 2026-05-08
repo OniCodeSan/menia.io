@@ -90,7 +90,7 @@ const CSP_DIRECTIVES = [
   "media-src 'self' blob: https:",
   "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.ingest.sentry.io https://*.sentry.io https://live.menia.io wss://live.menia.io https://www.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com",
   "worker-src 'self' blob:",
-  "frame-src 'self' https://*.stripe.com https://gumroad.com https://*.gumroad.com https://*.lemonsqueezy.com https://live.menia.io",
+  "frame-src 'self' https://*.stripe.com https://gumroad.com https://*.gumroad.com https://*.lemonsqueezy.com https://live.menia.io https://www.googletagmanager.com",
   "form-action 'self' https://*.stripe.com https://gumroad.com https://*.gumroad.com https://*.lemonsqueezy.com",
   "base-uri 'self'",
   "object-src 'none'",

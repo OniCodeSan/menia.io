@@ -20,11 +20,11 @@
          base-uri  'self'   → prevents <base> tag hijacking
          upgrade-insecure-requests → auto-upgrades any leftover http:// link
     -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://live.menia.io https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https: https://www.google-analytics.com https://www.googletagmanager.com; media-src 'self' blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.ingest.sentry.io https://*.sentry.io https://live.menia.io wss://live.menia.io https://www.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; worker-src 'self' blob:; frame-src 'self' https://*.stripe.com https://gumroad.com https://*.gumroad.com https://*.lemonsqueezy.com https://live.menia.io; form-action 'self' https://*.stripe.com https://gumroad.com https://*.gumroad.com https://*.lemonsqueezy.com; base-uri 'self'; object-src 'none'; upgrade-insecure-requests" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://live.menia.io https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https: https://www.google-analytics.com https://www.googletagmanager.com; media-src 'self' blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.ingest.sentry.io https://*.sentry.io https://live.menia.io wss://live.menia.io https://www.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; worker-src 'self' blob:; frame-src 'self' https://*.stripe.com https://gumroad.com https://*.gumroad.com https://*.lemonsqueezy.com https://live.menia.io https://www.googletagmanager.com; form-action 'self' https://*.stripe.com https://gumroad.com https://*.gumroad.com https://*.lemonsqueezy.com; base-uri 'self'; object-src 'none'; upgrade-insecure-requests" />
 
-    <!-- Google Analytics 4 (G-3289V4EBDR) — GDPR-compliant via Consent Mode v2.
-         Default: tutti i consensi DENIED. Il CookieBanner chiama
-         gtag('consent','update', ...) quando l'utente accetta gli analytics. -->
+    <!-- Google Consent Mode v2 — DEVE precedere il caricamento di GTM.
+         Default: tutto DENIED. CookieBanner chiama gtag('consent','update')
+         dopo accept/reject. GTM (sotto) legge da window.dataLayer. -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
@@ -36,19 +36,26 @@
         analytics_storage: 'denied',
         wait_for_update: 500
       });
-      // Se l'utente aveva già accettato in una visita precedente, aggiorna subito
       try {
         var c = JSON.parse(localStorage.getItem('menia:cookie_consent') || 'null');
         if (c && c.analytics === true) {
           gtag('consent', 'update', { analytics_storage: 'granted' });
         }
       } catch (e) {}
-      gtag('js', new Date());
-      gtag('config', 'G-3289V4EBDR', { anonymize_ip: true });
     </script>
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-3289V4EBDR"></script>
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-WG6WG627');</script>
+    <!-- End Google Tag Manager -->
   </head>
   <body>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-WG6WG627"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
