@@ -22,9 +22,9 @@
     -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://live.menia.io https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https: https://www.google-analytics.com https://www.googletagmanager.com; media-src 'self' blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.ingest.sentry.io https://*.sentry.io https://live.menia.io wss://live.menia.io https://www.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; worker-src 'self' blob:; frame-src 'self' https://*.stripe.com https://gumroad.com https://*.gumroad.com https://*.lemonsqueezy.com https://live.menia.io https://www.googletagmanager.com; form-action 'self' https://*.stripe.com https://gumroad.com https://*.gumroad.com https://*.lemonsqueezy.com; base-uri 'self'; object-src 'none'; upgrade-insecure-requests" />
 
-    <!-- Google Consent Mode v2 — DEVE precedere il caricamento di GTM.
+    <!-- Google Consent Mode v2 — DEVE precedere il caricamento di GTM/gtag.
          Default: tutto DENIED. CookieBanner chiama gtag('consent','update')
-         dopo accept/reject. GTM (sotto) legge da window.dataLayer. -->
+         dopo accept/reject. GTM e gtag.js leggono entrambi da window.dataLayer. -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
@@ -42,7 +42,11 @@
           gtag('consent', 'update', { analytics_storage: 'granted' });
         }
       } catch (e) {}
+      gtag('js', new Date());
+      gtag('config', 'G-3289V4EBDR', { anonymize_ip: true });
     </script>
+    <!-- Google tag (gtag.js) — GA4 direct (G-3289V4EBDR) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-3289V4EBDR"></script>
     <!-- Google Tag Manager -->
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
